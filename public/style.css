@@ -100,6 +100,9 @@ textarea, input, select {
 .type-fighting { --type: #c03028; } .type-fairy { --type: #ee99ac; }
 .type-ghost { --type: #705898; } .type-dragon { --type: #7038f8; }
 .type-dark { --type: #705848; } .type-steel { --type: #b8b8d0; }
+.type-ice { --type: #98d8d8; } .type-poison { --type: #a040a0; }
+.type-ground { --type: #e0c068; } .type-flying { --type: #a890f0; }
+.type-bug { --type: #a8b820; } .type-rock { --type: #b8a038; }
 
 /* pokedex */
 .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }

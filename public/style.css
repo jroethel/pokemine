@@ -25,10 +25,12 @@
 * { box-sizing: border-box; }
 body {
   margin: 0; font-family: -apple-system, "Segoe UI", Verdana, sans-serif;
-  background: var(--bg); color: var(--ink);
-  background-image:
-    repeating-linear-gradient(45deg, rgba(60, 90, 166, .035) 0 1px, transparent 1px 34px),
-    repeating-linear-gradient(-45deg, rgba(60, 90, 166, .035) 0 1px, transparent 1px 34px);
+  color: var(--ink);
+  /* subtle tiled artwork under a heavy translucent tint so content stays readable */
+  background:
+    linear-gradient(rgba(234, 241, 253, .88), rgba(234, 241, 253, .88)),
+    url(bg.jpg) repeat;
+  background-size: auto, 420px;
 }
 .hidden { display: none !important; }
 
@@ -106,6 +108,10 @@ textarea, input, select {
 textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); outline: none; }
 .provider { display: block; margin-top: .8rem; font-size: .82rem; color: var(--brand-navy); font-weight: 700; }
 .provider select { width: auto; padding: .2rem .5rem; font-size: .82rem; }
+.bridge-hint {
+  margin: .6rem 0 0; font-size: .78rem; color: #8a6d0b; font-weight: 700;
+  background: #fff7d6; border: 1.5px solid #f0d98a; border-radius: 10px; padding: .4rem .7rem;
+}
 
 /* create view - the reveal moment */
 .create {

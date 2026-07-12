@@ -1,0 +1,12 @@
+{
+  "name": "pokemine",
+  "private": true,
+  "engines": { "node": ">=20.6" },
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "express": "^4.19.0"
+  }
+}

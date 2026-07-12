@@ -17,6 +17,18 @@ app.use(express.json({ limit: '8mb' })); // bridge result payloads carry ~1-2MB 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static(store.root()));
 
+// CORS + Private Network Access on the bridge endpoints, so page-context drivers
+// (a script running on gemini.google.com, not just the extension service worker)
+// can fulfill jobs against this LAN server.
+app.use('/api/bridge', (req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Private-Network', 'true');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 const wrap = fn => (req, res, next) => fn(req, res).catch(next);
 
 const mimeFor = f => f.endsWith('.png') ? 'image/png' : f.endsWith('.webp') ? 'image/webp' : 'image/jpeg';

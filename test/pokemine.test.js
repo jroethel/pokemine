@@ -59,7 +59,28 @@ test('providers: extFor maps mime to extension', () => {
   assert.equal(extFor('image/webp'), 'webp');
 });
 
-const { extractJSON, validateStage } = require('../lib/text');
+const { callJSON, extractJSON, validateStage } = require('../lib/text');
+
+test('text: callJSON retries once on malformed JSON, succeeds', async () => {
+  const realFetch = global.fetch;
+  let n = 0;
+  const good = { candidates: [{ content: { parts: [{ text: '{"ok":1}' }] } }] };
+  const garbage = { candidates: [{ content: { parts: [{ text: 'not json' }] } }] };
+  global.fetch = async () => ({ json: async () => (n++ === 0 ? garbage : good) });
+  try {
+    assert.deepEqual(await callJSON('p'), { ok: 1 });
+    assert.equal(n, 2);
+  } finally { global.fetch = realFetch; }
+});
+
+test('text: callJSON throws when JSON is malformed twice', async () => {
+  const realFetch = global.fetch;
+  const garbage = { candidates: [{ content: { parts: [{ text: 'not json' }] } }] };
+  global.fetch = async () => ({ json: async () => garbage });
+  try {
+    await assert.rejects(callJSON('p'), /JSON/);
+  } finally { global.fetch = realFetch; }
+});
 
 test('text: extractJSON parses gemini response text parts', () => {
   const api = { candidates: [{ content: { parts: [{ text: '{"a":' }, { text: '1}' }] } }] };

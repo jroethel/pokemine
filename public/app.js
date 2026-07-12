@@ -58,17 +58,29 @@ function currentProvider() {
   return localStorage.provider || config.default;
 }
 
+function providerLabel(p) {
+  if (p.name === 'bridge') return config.bridge?.driverConnected ? 'bridge' : 'bridge (driver offline)';
+  return `${p.name}${p.real ? '' : ' (soon)'}`;
+}
+
 function providerSelect() {
   return `<label class="provider no-print">art by
     <select id="provider">${config.providers.map(p =>
       `<option value="${p.name}" ${p.name === currentProvider() ? 'selected' : ''}>
-        ${p.name}${p.real ? '' : ' (soon)'}</option>`).join('')}
+        ${providerLabel(p)}</option>`).join('')}
     </select></label>`;
+}
+
+function updateBridgeHint() {
+  const hint = $('#bridge-hint');
+  if (!hint) return;
+  const offline = currentProvider() === 'bridge' && !config.bridge?.driverConnected;
+  hint.classList.toggle('hidden', !offline);
 }
 
 function bindProviderSelect() {
   const sel = $('#provider');
-  if (sel) sel.onchange = () => { localStorage.provider = sel.value; };
+  if (sel) sel.onchange = () => { localStorage.provider = sel.value; updateBridgeHint(); };
 }
 
 // ---------- card ----------
@@ -111,9 +123,11 @@ function viewCreate() {
         <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
         <button id="go" class="big">Generate!</button>
         ${providerSelect()}
+        <p id="bridge-hint" class="bridge-hint no-print hidden">Open gemini.google.com in Brave with the Pokemine Bridge extension</p>
       </div>
     </div>`;
   bindProviderSelect();
+  updateBridgeHint();
   $('#go').onclick = async () => {
     const prompt = $('#prompt').value;
     if (!prompt.trim()) return;
@@ -227,6 +241,7 @@ async function viewPrint() {
 // ---------- router ----------
 
 async function route() {
+  try { config = await api('/config'); } catch { /* keep last-known config */ }
   const [view, id, extra] = location.hash.slice(1).split('/');
   try {
     if (view === 'card' && id) return await viewCard(id, extra === undefined ? undefined : +extra);
@@ -240,7 +255,4 @@ async function route() {
 
 window.addEventListener('hashchange', route);
 
-(async function init() {
-  config = await api('/config');
-  route();
-})();
+route(); // route() fetches config before rendering

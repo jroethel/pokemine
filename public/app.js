@@ -103,10 +103,15 @@ function cardHTML(rec, idx) {
 function viewCreate() {
   $('#view').innerHTML = `
     <div class="create">
-      <h1>Make a Pokemon!</h1>
-      <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
-      <button id="go" class="big">GENERATE!</button>
-      ${providerSelect()}
+      <div class="create-stage lattice">
+        <img class="create-logo" src="logo.jpg" alt="Pokemine">
+        <p class="create-tag">Dream it up. We'll make the card.</p>
+      </div>
+      <div class="create-body">
+        <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
+        <button id="go" class="big">Generate!</button>
+        ${providerSelect()}
+      </div>
     </div>`;
   bindProviderSelect();
   $('#go').onclick = async () => {
@@ -186,7 +191,7 @@ async function viewCard(id, stageIdx) {
 async function viewDex() {
   const all = await api('/pokemon');
   $('#view').innerHTML = `
-    <h1>Your Pokedex (${all.length})</h1>
+    <h1 class="display">Your Pokedex (${all.length})</h1>
     <div class="dex">${all.map(rec => {
       const s = rec.stages[rec.stages.length - 1];
       return `<a class="dex-item" href="#card/${rec.id}">
@@ -201,7 +206,7 @@ async function viewPrint() {
   const items = all.flatMap(rec => rec.stages.map((s, i) => ({ rec, i })));
   $('#view').innerHTML = `
     <div class="no-print print-bar">
-      <h1>Print cards</h1>
+      <h1 class="display">Print Cards</h1>
       <p>Untick any card you don't want, then hit print. Cards come out real size (63x88mm) - cut inside the yellow border.</p>
       <button id="do-print" class="big">PRINT!</button>
     </div>

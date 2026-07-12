@@ -206,6 +206,12 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     body: body ? JSON.stringify(body) : undefined,
   }).then(async r => ({ status: r.status, body: await r.json() }));
 
+  // spy on the prompt the mock artist receives so we can assert the no-text rule is present
+  const mock = getProvider('mock');
+  const realGen = mock.generate;
+  let lastPrompt = '';
+  mock.generate = async a => { lastPrompt = a.prompt; return realGen(a); };
+
   try {
     let r = await call('/api/pokemon', 'POST', { prompt: '', provider: 'mock' });
     assert.equal(r.status, 400);
@@ -219,6 +225,7 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.ok(store.readArt(rec.id, 'stage-1.png').length > 0);
 
     r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { provider: 'mock' });
+    assert.match(lastPrompt, /Do not write/); // no-text rule on the evolve prompt
     assert.equal(r.body.stages.length, 2);
     assert.equal(r.body.stages[1].name, 'Gyattzilla');
     assert.equal(r.body.stages[1].art, 'stage-2.png');
@@ -226,6 +233,7 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     r = await call(`/api/pokemon/${rec.id}/alter`, 'POST', { instruction: 'angrier', stage: 0, provider: 'mock' });
     assert.ok(store.readArt(rec.id, 'stage-1.v1.png').length > 0);
     assert.match(r.body.stages[0].description, /angrier/);
+    assert.match(lastPrompt, /Do not write/); // no-text rule on the alter prompt
 
     // blank Redraw = "draw my original idea again": no 400, art re-saved, backup kept
     fs.rmSync(path.join(process.env.DATA_DIR, 'pokemon', rec.id, 'stage-1.v1.png'));
@@ -243,6 +251,7 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
   } finally {
     srv.close();
     global.fetch = realFetch;
+    mock.generate = realGen;
   }
 });
 

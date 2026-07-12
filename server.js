@@ -31,6 +31,8 @@ app.use('/api/bridge', (req, res, next) => {
 
 const wrap = fn => (req, res, next) => fn(req, res).catch(next);
 
+const NO_TEXT = "Do not write the creature's name or any text, letters, numbers, logos, or watermarks anywhere in the image.";
+
 const mimeFor = f => f.endsWith('.png') ? 'image/png' : f.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
 
 // Browser driver bridge: the extension can't read local files, so it polls these
@@ -110,11 +112,11 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   const prev = record.stages[record.stages.length - 1];
   const { artPrompt, ...stageData } = await text.evolvedStage(record);
   const p = getProvider(provider);
-  const prompt = withContinuity(provider,
+  const prompt = `${withContinuity(provider,
     `Evolve this creature. Its evolved form: ${artPrompt}
 Same species, same color palette, same art style, clearly a bigger more powerful evolution.
 The evolved form should look sturdier or sharper than before, same palette, keep one signature feature.`,
-    prev.description);
+    prev.description)}\n${NO_TEXT}`;
   const reference = p.supportsReference
     ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
     : undefined;
@@ -145,7 +147,8 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
     ? { data: current, mime: mimeFor(stage.art) }
     : undefined;
   // Without a reference image, hand the artist the text description instead (as withContinuity does).
-  const prompt = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
+  const composed = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
+  const prompt = `${composed}\n${NO_TEXT}`;
   const art = await p.generate({ prompt, reference });
   store.backupArt(record.id, stage.art);
   stage.art = store.saveArt(record.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);

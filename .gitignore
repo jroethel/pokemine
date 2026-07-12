@@ -3,3 +3,9 @@ nano-api.md
 data/
 test-image.png
 node_modules/
+docs/reference/notebook-cache/
+e2e-artifacts/
+resources/**/*.jpg
+resources/**/*.jpeg
+resources/**/*.png
+resources/**/*.webp

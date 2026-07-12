@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Guide - Pokemine</title>
+<style>
+:root {
+  --ink: #2b2b2b; --muted: #6b6b60; --accent: #4a6b57;
+  --bg: #faf9f5; --card: #ffffff; --line: #e4e1d7;
+}
+body {
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--ink); background: var(--bg);
+  max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem;
+  line-height: 1.6;
+}
+h1 { font-size: 1.7rem; margin-bottom: 0.2rem; }
+.subtitle { color: var(--muted); margin-top: 0; }
+h2 {
+  font-size: 1.15rem; color: var(--accent);
+  border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; margin-top: 2.5rem;
+}
+section.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.2rem 1.2rem 0.8rem; margin: 1rem 0;
+}
+dt { font-weight: 600; margin-top: 0.9rem; }
+dd { margin: 0.15rem 0 0 0; color: #444; }
+.why { color: var(--muted); font-size: 0.92rem; }
+code { background: #f0eee6; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95rem; }
+th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>Learning Guide</h1>
+<p class="subtitle">Pokemine design/brainstorming session - 2026-07-12</p>
+
+<h2>Design-process learnings</h2>
+<section class="card">
+<dl>
+<dt>A resource inventory in the brief is a request to map the solution space, not background color.</dt>
+<dd>Jeremy listed "Google Pro AI plan" in his stack. The session evaluated only API-based image generation and never surfaced the implied alternative: tapping the consumer plan's already-paid image quota via browser automation. Jeremy had to propose that direction (Plan B) himself.</dd>
+<dd class="why">Direct feedback, 2026-07-12: "capture the learning that didn't have you ask me about the browser idea when I mentioned I had AI Pro. I'm expecting you to catch things like that!" Future sessions: walk the inventory item by item and ask "what approach does this asset uniquely enable?" - surface every viable option with a recommendation, including options you would argue against.</dd>
+
+<dt>Verify provider capabilities with live calls during design, not during build.</dt>
+<dd>Two one-minute curl probes changed the design's facts: the Gemini free tier returns quota <code>limit: 0</code> for <code>gemini-3.1-flash-image</code> (billing required, ~$0.034/image), and Z.AI's <code>glm-image</code> exists but the GLM Coding Plan excludes image generation (error 1113, needs balance). Text on <code>gemini-flash-latest</code> verified free and working.</dd>
+<dd class="why">The initial recommendation ("a free AI Studio key covers images") was wrong and was caught by checking before it shaped the spec. Web research alone had already gone stale.</dd>
+
+<dt>A rival "Plan B" is often just a component of Plan A wearing an architecture costume.</dt>
+<dd>The browser-bridge idea looked like a competing app design. Reframed, it is a fourth image provider behind the same <code>generate()</code> interface, fulfilled out-of-band via a job folder (<code>bridge-jobs/*.json</code> in, <code>*.png</code> out). Plan A absorbed its good parts (Drive-synced <code>DATA_DIR</code>, the job contract) without building the fragile part.</dd>
+
+<dt>Gitignore secrets before the first commit, not after.</dt>
+<dd><code>nano-api.md</code> holds a live API key and sat in the repo root when <code>git init</code> ran. The <code>.gitignore</code> (covering <code>nano-api.md</code>, <code>.env</code>, <code>data/</code>) went in with the first commit, so the key never entered history.</dd>
+</dl>
+</section>
+
+<h2>User preferences (carry into future sessions)</h2>
+<section class="card">
+<dl>
+<dt>Surface unstated options implied by listed resources; Jeremy expects Claude to catch them.</dt>
+<dd>The strongest preference from this session. Do the creative option-mapping proactively; do not make him bring his own alternatives.</dd>
+<dt>Configurable providers with real implementations plus explicit stubs.</dt>
+<dd>Asked for Gemini and Z.AI both live and frontend-selectable, with stubs (<code>local</code>, <code>bridge</code>) left for future sessions to build out via prompt.</dd>
+<dt>Capture rejected directions as specs he can come back to.</dt>
+<dd>Requested a Next.js migration spec and got the browser-bridge direction written up even though neither is being built now.</dd>
+<dt>Nothing may depend on Anthropic after 2026-08-05.</dt>
+<dd>His Claude access ends then; any agent-driven component must be runnable on GLM 5.2 in the Claude Code harness.</dd>
+</dl>
+</section>
+
+<h2>Key decisions register</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr>
+<td>Plan A: single Express server, no-build frontend</td>
+<td>Next.js full-stack; gemini-cli only (no app)</td>
+<td>The hard parts are prompts and card CSS, not UI state; no build step keeps future sessions cheap. Next.js captured as deferred spec.</td>
+</tr>
+<tr>
+<td>Gemini API (paid, ~$0.034/img) as primary image path</td>
+<td>Browser bridge to consumer quota; local Stable Diffusion</td>
+<td>~$7/month at heavy kid usage vs DOM-scraping fragility, ToS risk, and 45s+ latency failing mid-session.</td>
+</tr>
+<tr>
+<td>HTML/CSS card frame + AI art inside</td>
+<td>AI generates the whole card as one image</td>
+<td>Crisp editable text, consistent collection, sharp printing; AI-rendered card text comes out garbled.</td>
+</tr>
+<tr>
+<td>File storage in Drive-synced <code>DATA_DIR</code></td>
+<td>Local-only folder; database</td>
+<td>Free backup and anywhere-viewing at zero code cost; one folder per evolution line.</td>
+</tr>
+<tr>
+<td>Text generation fixed to free <code>gemini-flash-latest</code></td>
+<td>Making text provider selectable like images</td>
+<td>Free, verified working; selectability there is YAGNI.</td>
+</tr>
+</table>
+</section>
+
+<h2>Operational learnings</h2>
+<section class="card">
+<dl>
+<dt>Gemini image billing is per-project, not per-key.</dt>
+<dd>Unblocking images means linking a billing account to Google Cloud project <code>319193243056</code> ("Nano Banana Poke"); the key in <code>nano-api.md</code> then works unchanged. Daily cap Tier 1: 1,000 images, 10/min.</dd>
+<dt>Z.AI key location.</dt>
+<dd>Lives in <code>~/.claude.json</code> under the <code>zai-mcp-server</code> env, not in a shell profile. Valid image models on the endpoint: <code>glm-image</code>, <code>cogview-4-250304</code>.</dd>
+</dl>
+</section>
+
+<footer>Generated from the 2026-07-12 brainstorming/design session (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code>.</footer>
+</body>
+</html>

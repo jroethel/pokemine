@@ -52,7 +52,8 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   const p = getProvider(provider);
   const prompt = withContinuity(provider,
     `Evolve this creature. Its evolved form: ${artPrompt}
-Same species, same color palette, same art style, clearly a bigger more powerful evolution.`,
+Same species, same color palette, same art style, clearly a bigger more powerful evolution.
+The evolved form should look sturdier or sharper than before, same palette, keep one signature feature.`,
     prev.description);
   const reference = p.supportsReference
     ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }

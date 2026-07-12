@@ -1,9 +1,10 @@
 const express = require('express');
+const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const store = require('./lib/store');
 const text = require('./lib/text');
-const { getProvider, withContinuity, listProviders, extFor } = require('./lib/providers');
+const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir } = require('./lib/providers');
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || './data';
@@ -12,7 +13,7 @@ const DEFAULT_PROVIDER = process.env.DEFAULT_IMAGE_PROVIDER || 'gemini';
 store.init(DATA_DIR);
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '8mb' })); // bridge result payloads carry ~1-2MB base64 images
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static(store.root()));
 
@@ -20,8 +21,55 @@ const wrap = fn => (req, res, next) => fn(req, res).catch(next);
 
 const mimeFor = f => f.endsWith('.png') ? 'image/png' : f.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
 
+// Browser driver bridge: the extension can't read local files, so it polls these
+// HTTP endpoints and posts results back. Jobs are claimed in-memory so two polling
+// drivers don't double-run one; a claim older than 150s frees up again.
+const bridge = { lastSeen: 0, claims: new Map() };
+const CLAIM_TTL = 150000;
+
+app.get('/api/bridge/jobs', (req, res) => {
+  const dir = bridgeJobsDir();
+  const now = Date.now();
+  const jobs = [];
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith('.json')) continue;
+    const id = f.slice(0, -5);
+    const claimedAt = bridge.claims.get(id);
+    if (claimedAt && now - claimedAt < CLAIM_TTL) continue;
+    try {
+      const { prompt } = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      jobs.push({ id, prompt });
+      bridge.claims.set(id, now);
+    } catch { /* half-written job file, pick it up next poll */ }
+  }
+  res.json(jobs);
+});
+
+app.post('/api/bridge/jobs/:id/result', (req, res) => {
+  const { b64, mime } = req.body;
+  const ext = mime === 'image/jpeg' || mime === 'image/jpg' ? 'jpg' : 'png';
+  fs.writeFileSync(path.join(bridgeJobsDir(), `${req.params.id}.${ext}`), Buffer.from(b64, 'base64'));
+  bridge.claims.delete(req.params.id);
+  res.json({ ok: true });
+});
+
+app.post('/api/bridge/jobs/:id/error', (req, res) => {
+  fs.writeFileSync(path.join(bridgeJobsDir(), `${req.params.id}.error`), String(req.body.message || 'driver error'));
+  bridge.claims.delete(req.params.id);
+  res.json({ ok: true });
+});
+
+app.post('/api/bridge/ping', (req, res) => {
+  bridge.lastSeen = Date.now();
+  res.json({ ok: true });
+});
+
 app.get('/api/config', (req, res) => {
-  res.json({ providers: listProviders(), default: DEFAULT_PROVIDER });
+  res.json({
+    providers: listProviders(),
+    default: DEFAULT_PROVIDER,
+    bridge: { driverConnected: Date.now() - bridge.lastSeen < 15000, lastSeen: bridge.lastSeen || null },
+  });
 });
 
 app.get('/api/pokemon', (req, res) => res.json(store.list()));

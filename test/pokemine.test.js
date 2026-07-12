@@ -238,3 +238,49 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     global.fetch = realFetch;
   }
 });
+
+test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
+  process.env.BRIDGE_POLL_MS = '40';
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const payload = { stage: { name: 'Bridgey', category: 'The Proxy Pokemon', types: ['Steel'], hp: 60,
+        flavor: 'f', moves: [{ name: 'Relay', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' },
+        backstory: 'routed through a browser tab' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
+    method, headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(async r => ({ status: r.status, body: await r.json() }));
+
+  try {
+    // driver: poll for the job, answer with a 1x1 png (mirrors the Brave extension loop)
+    const driver = (async () => {
+      for (let i = 0; i < 200; i++) {
+        const { body: jobs } = await call('/api/bridge/jobs');
+        if (jobs.length) {
+          await call(`/api/bridge/jobs/${jobs[0].id}/result`, 'POST', { b64: PIXEL_B64, mime: 'image/png' });
+          return jobs[0];
+        }
+        await new Promise(r => setTimeout(r, 20));
+      }
+    })();
+
+    const created = await call('/api/pokemon', 'POST', { prompt: 'a proxy pokemon', provider: 'bridge' });
+    const job = await driver;
+    assert.ok(job, 'driver saw a job');
+    assert.equal(created.status, 200);
+    assert.equal(created.body.stages[0].art, 'stage-1.png');
+    assert.ok(store.readArt(created.body.id, 'stage-1.png').length > 0);
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+  }
+});

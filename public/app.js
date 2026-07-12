@@ -166,9 +166,10 @@ async function viewCard(id, stageIdx) {
   bindProviderSelect();
 
   $('#evolve').onclick = async () => {
+    const instruction = $('#alter-text').value; // optional: steer the evolution
     const r = await generating(() =>
-      api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { provider: currentProvider() } }));
-    if (r) location.hash = `#card/${rec.id}/${r.stages.length - 1}`;
+      api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { instruction, provider: currentProvider() } }));
+    if (r) { $('#alter-text').value = ''; location.hash = `#card/${rec.id}/${r.stages.length - 1}`; }
   };
 
   const useOrigin = $('#use-origin');

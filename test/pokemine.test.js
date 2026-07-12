@@ -232,8 +232,9 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.equal(rec.backstory, 'born in a gym sock');
     assert.ok(store.readArt(rec.id, 'stage-1.png').length > 0);
 
-    r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { provider: 'mock' });
+    r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { instruction: 'make it a dragon', provider: 'mock' });
     assert.match(lastPrompt, /Do not write/); // no-text rule on the evolve prompt
+    assert.match(lastPrompt, /make it a dragon/); // evolve steering reaches the image prompt
     assert.equal(r.body.stages.length, 2);
     assert.equal(r.body.stages[1].name, 'Gyattzilla');
     assert.equal(r.body.stages[1].art, 'stage-2.png');

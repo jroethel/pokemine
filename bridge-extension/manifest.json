@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Pokemine Bridge",
+  "version": "1.0.0",
+  "description": "Drives the consumer Gemini web app to fulfill Pokemine image jobs from the local server.",
+  "content_scripts": [
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": { "service_worker": "background.js" },
+  "host_permissions": ["http://localhost:3000/*"]
+}

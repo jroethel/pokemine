@@ -114,6 +114,34 @@ test('text: validateStage rejects incomplete stages', () => {
   assert.equal(validateStage(ok), ok);
 });
 
+test('text: validateStage rejects bare-string moves, newPokemon retries once on bad shape', async () => {
+  const base = { name: 'x', category: 'c', types: ['Fire'], hp: 50, flavor: 'f',
+    artPrompt: 'a', description: 'd' };
+  assert.throws(() => validateStage({ ...base, moves: ['Salsa Squirt', 'Shell Slam'] }),
+    /missing field: moves shape/);
+  assert.throws(() => validateStage({ ...base, moves: [{ name: 'm', damage: 10 }] }),
+    /missing field: moves shape/);
+
+  // bad shape on first generation, good on second -> newPokemon succeeds
+  const { newPokemon } = require('../lib/text');
+  const realFetch = global.fetch;
+  let calls = 0;
+  const respond = payload => ({ json: async () => ({
+    candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) });
+  global.fetch = async () => {
+    calls++;
+    const moves = calls === 1 ? ['bare string'] : [{ name: 'm', damage: 10, text: 't' }];
+    return respond({ stage: { ...base, moves }, backstory: 'b' });
+  };
+  try {
+    const data = await newPokemon('test');
+    assert.equal(calls, 2);
+    assert.equal(data.stage.moves[0].name, 'm');
+  } finally {
+    global.fetch = realFetch;
+  }
+});
+
 test('api: create, evolve, alter, patch lifecycle', async () => {
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {

@@ -158,6 +158,11 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   res.json(record);
 }));
 
+app.delete('/api/pokemon/:id', (req, res) => {
+  store.archive(req.params.id);
+  res.json({ ok: true });
+});
+
 app.patch('/api/pokemon/:id', wrap(async (req, res) => {
   const { stage: stageIndex = 0, backstory, ...fields } = req.body;
   const record = store.get(req.params.id);

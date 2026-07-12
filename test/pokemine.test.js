@@ -34,6 +34,14 @@ test('store: art save/read/backup', () => {
   assert.equal(store.readArt(rec.id, 'stage-1.jpg').toString(), 'BBB');
 });
 
+test('store: archive moves a pokemon out of list into a hidden archive folder', () => {
+  const rec = store.create({ backstory: '', stages: [{ name: 'Goner' }] });
+  assert.ok(store.list().some(p => p.id === rec.id));
+  store.archive(rec.id);
+  assert.ok(!store.list().some(p => p.id === rec.id));
+  assert.ok(fs.existsSync(path.join(store.root(), '..', 'archive', rec.id, 'pokemon.json')));
+});
+
 const { getProvider, withContinuity, listProviders, extFor } = require('../lib/providers');
 
 test('providers: mock generates, stubs throw, unknown throws', async () => {
@@ -248,6 +256,11 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
 
     r = await call('/api/pokemon');
     assert.ok(r.body.some(p => p.id === rec.id));
+
+    r = await call(`/api/pokemon/${rec.id}`, 'DELETE');
+    assert.deepEqual(r.body, { ok: true });
+    r = await call('/api/pokemon');
+    assert.ok(!r.body.some(p => p.id === rec.id)); // released -> gone from the dex
   } finally {
     srv.close();
     global.fetch = realFetch;

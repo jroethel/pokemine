@@ -159,6 +159,7 @@ async function viewCard(id, stageIdx) {
             <button id="use-origin" class="link-btn">use it</button></div>` : ''}
           <details class="backstory" open><summary>Backstory</summary>
             <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
+          <button id="release" class="release no-print">Release into the wild</button>
         </div>
       </div>
     </div>`;
@@ -172,6 +173,13 @@ async function viewCard(id, stageIdx) {
 
   const useOrigin = $('#use-origin');
   if (useOrigin) useOrigin.onclick = () => { $('#alter-text').value = rec.stages[0].prompt; };
+
+  $('#release').onclick = async () => {
+    const name = rec.stages[idx].name;
+    if (!confirm(`Release ${name} into the wild? (Dad can rescue them from the archive.)`)) return;
+    await api(`/pokemon/${rec.id}`, { method: 'DELETE' }).catch(e => alert(e.message));
+    location.hash = '#dex';
+  };
 
   $('#alter').onclick = async () => {
     const instruction = $('#alter-text').value;

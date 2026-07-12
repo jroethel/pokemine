@@ -1,0 +1,35 @@
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'pokemine-'));
+
+const store = require('../lib/store');
+store.init(process.env.DATA_DIR);
+
+test('store: create/list/get/save round trip', () => {
+  const rec = store.create({ backstory: 'b', stages: [{ name: 'Gyatt!', hp: 70 }] });
+  assert.match(rec.id, /^gyatt-/);
+  assert.equal(rec.number, 1);
+  assert.equal(store.get(rec.id).stages[0].hp, 70);
+  rec.stages[0].hp = 80;
+  store.save(rec);
+  assert.equal(store.get(rec.id).stages[0].hp, 80);
+  const rec2 = store.create({ backstory: '', stages: [{ name: '???' }] });
+  assert.equal(rec2.number, 2);
+  assert.match(rec2.id, /^pokemon-/); // punctuation-only name falls back to 'pokemon'
+  assert.equal(store.list().length, 2);
+  assert.deepEqual(store.list().map(r => r.number), [1, 2]);
+});
+
+test('store: art save/read/backup', () => {
+  const rec = store.create({ backstory: '', stages: [{ name: 'Arty' }] });
+  store.saveArt(rec.id, 'stage-1.jpg', Buffer.from('AAA'));
+  assert.equal(store.readArt(rec.id, 'stage-1.jpg').toString(), 'AAA');
+  store.backupArt(rec.id, 'stage-1.jpg');
+  store.saveArt(rec.id, 'stage-1.jpg', Buffer.from('BBB'));
+  assert.equal(store.readArt(rec.id, 'stage-1.v1.jpg').toString(), 'AAA');
+  assert.equal(store.readArt(rec.id, 'stage-1.jpg').toString(), 'BBB');
+});

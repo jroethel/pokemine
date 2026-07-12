@@ -150,11 +150,13 @@ async function viewCard(id, stageIdx) {
         <div class="side">
           <div class="hint">Tap the card text to edit it!</div>
           <div class="actions">
-            <input id="alter-text" placeholder="Change it! (give it a hat...)">
+            <input id="alter-text" placeholder="Change its LOOK (give it a hat, make it angry...)">
             <button id="alter">Redraw</button>
             <button id="evolve" class="big">EVOLVE!</button>
             ${providerSelect()}
           </div>
+          ${rec.stages[0].prompt ? `<div class="born-from">Born from: "${esc(rec.stages[0].prompt)}"
+            <button id="use-origin" class="link-btn">use it</button></div>` : ''}
           <details class="backstory" open><summary>Backstory</summary>
             <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
         </div>
@@ -167,6 +169,9 @@ async function viewCard(id, stageIdx) {
       api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { provider: currentProvider() } }));
     if (r) location.hash = `#card/${rec.id}/${r.stages.length - 1}`;
   };
+
+  const useOrigin = $('#use-origin');
+  if (useOrigin) useOrigin.onclick = () => { $('#alter-text').value = rec.stages[0].prompt; };
 
   $('#alter').onclick = async () => {
     const instruction = $('#alter-text').value;

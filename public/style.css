@@ -177,6 +177,15 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   color: var(--brand-navy); font-size: .9rem; font-weight: 700; margin-bottom: .6rem;
 }
 .actions { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1rem; }
+.born-from {
+  font-size: .82rem; color: #6b7a99; font-style: italic; margin: -.4rem 0 1rem;
+}
+.link-btn {
+  background: none; color: var(--brand-blue); box-shadow: none; padding: 0 .2rem;
+  font-size: .82rem; font-style: normal; text-decoration: underline; font-weight: 700;
+}
+.link-btn:hover { filter: none; color: var(--brand-navy); }
+.link-btn:active { transform: none; }
 .backstory {
   background: #fff; border-radius: 14px; padding: .7rem 1rem;
   box-shadow: 0 2px 10px rgba(30, 42, 74, .1);

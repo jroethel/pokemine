@@ -227,6 +227,13 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.ok(store.readArt(rec.id, 'stage-1.v1.png').length > 0);
     assert.match(r.body.stages[0].description, /angrier/);
 
+    // blank Redraw = "draw my original idea again": no 400, art re-saved, backup kept
+    fs.rmSync(path.join(process.env.DATA_DIR, 'pokemon', rec.id, 'stage-1.v1.png'));
+    r = await call(`/api/pokemon/${rec.id}/alter`, 'POST', { stage: 0, provider: 'mock' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.stages[0].art, 'stage-1.png');
+    assert.ok(store.readArt(rec.id, 'stage-1.v1.png').length > 0);
+
     r = await call(`/api/pokemon/${rec.id}`, 'PATCH', { stage: 0, name: 'Sir Gyatt', hp: 90 });
     assert.equal(r.body.stages[0].name, 'Sir Gyatt');
     assert.equal(store.get(rec.id).stages[0].hp, 90);

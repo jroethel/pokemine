@@ -130,22 +130,27 @@ The evolved form should look sturdier or sharper than before, same palette, keep
 
 app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   const { instruction, stage: stageIndex, provider = DEFAULT_PROVIDER } = req.body;
-  if (!instruction || !instruction.trim()) return res.status(400).json({ error: 'Say what to change!' });
   const record = store.get(req.params.id);
   const idx = stageIndex === undefined ? record.stages.length - 1 : stageIndex;
   const stage = record.stages[idx];
+  const said = (instruction || '').trim();
+  // Blank = "draw my original idea again": stage 0 uses the kid's own words, later stages the description.
+  const base = said
+    ? `${said}. Keep it the same creature, same cel-shaded Pokemon-style game art, full body, plain white background.`
+    : `Draw this creature fresh: ${idx === 0 ? record.stages[0].prompt : stage.description}`;
   const p = getProvider(provider);
-  const prompt = withContinuity(provider,
-    `${instruction.trim()}. Keep it the same creature, same cel-shaded Pokemon-style game art, full body, plain white background.`,
-    stage.description);
-  const reference = p.supportsReference
-    ? { data: store.readArt(record.id, stage.art), mime: mimeFor(stage.art) }
+  const current = store.readArt(record.id, stage.art);
+  const placeholder = current.length < 500; // mock's 1x1 png - no real art to draw from
+  const reference = p.supportsReference && !placeholder
+    ? { data: current, mime: mimeFor(stage.art) }
     : undefined;
+  // Without a reference image, hand the artist the text description instead (as withContinuity does).
+  const prompt = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
   const art = await p.generate({ prompt, reference });
   store.backupArt(record.id, stage.art);
   stage.art = store.saveArt(record.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);
   // ponytail: naive continuity note; regenerate description via vision call if drift ever matters
-  stage.description += ` Recently altered: ${instruction.trim()}.`;
+  if (said) stage.description += ` Recently altered: ${said}.`;
   store.save(record);
   res.json(record);
 }));

@@ -170,7 +170,6 @@ async function viewCard(id, stageIdx) {
 
   $('#alter').onclick = async () => {
     const instruction = $('#alter-text').value;
-    if (!instruction.trim()) return;
     const r = await generating(() =>
       api(`/pokemon/${rec.id}/alter`, {
         method: 'POST', body: { instruction, stage: idx, provider: currentProvider() },

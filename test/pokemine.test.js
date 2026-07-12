@@ -58,3 +58,17 @@ test('providers: extFor maps mime to extension', () => {
   assert.equal(extFor('image/png'), 'png');
   assert.equal(extFor('image/webp'), 'webp');
 });
+
+const { extractJSON, validateStage } = require('../lib/text');
+
+test('text: extractJSON parses gemini response text parts', () => {
+  const api = { candidates: [{ content: { parts: [{ text: '{"a":' }, { text: '1}' }] } }] };
+  assert.deepEqual(extractJSON(api), { a: 1 });
+});
+
+test('text: validateStage rejects incomplete stages', () => {
+  assert.throws(() => validateStage({ name: 'x' }), /missing field: category/);
+  const ok = { name: 'x', category: 'c', types: ['Fire'], hp: 50, flavor: 'f',
+    moves: [], artPrompt: 'a', description: 'd' };
+  assert.equal(validateStage(ok), ok);
+});

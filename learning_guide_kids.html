@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How We Built Pokemine (Kids' Guide)</title>
+<style>
+:root {
+  --ink: #2b2b2b; --accent: #3c5aa6; --yellow: #ffcb05; --blue: #2a75bb;
+  --bg: #eef4ff; --card: #ffffff; --line: #cdd9ef;
+}
+body {
+  font-family: -apple-system, "Segoe UI", Verdana, sans-serif;
+  color: var(--ink); background: var(--bg);
+  max-width: 780px; margin: 0 auto; padding: 2rem 1.2rem 5rem;
+  line-height: 1.7; font-size: 1.05rem;
+}
+h1 { color: var(--accent); font-size: 2rem; margin-bottom: 0.2rem; }
+.subtitle { color: #667; margin-top: 0; }
+h2 {
+  color: var(--blue); font-size: 1.35rem; margin-top: 2.2rem;
+  border-bottom: 3px solid var(--yellow); padding-bottom: 0.25rem;
+}
+section.card {
+  background: var(--card); border: 2px solid var(--line); border-radius: 14px;
+  padding: 0.4rem 1.3rem 1rem; margin: 1rem 0;
+}
+.big-idea {
+  background: #fff8dc; border: 2px solid var(--yellow); border-radius: 12px;
+  padding: 0.7rem 1rem; font-weight: 700; color: var(--accent); margin: 1rem 0;
+}
+code { background: #e8eefb; padding: 0.1em 0.4em; border-radius: 5px; font-size: 0.95em; }
+.story { font-style: italic; color: #555; }
+li { margin: 0.4rem 0; }
+footer { margin-top: 3rem; color: #778; font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>How We Built Pokemine</h1>
+<p class="subtitle">A kids' guide to building things with AI - featuring Gyatt, Tacoloak, and Socko</p>
+
+<p>Pokemine is the app where you type a silly idea and get a real Pokemon card.
+Dad and an AI built it together in one day.
+Here is how - and the three big skills that made it work.</p>
+
+<h2>Skill 1: Architecture (plan the LEGO build before you dump out the bricks)</h2>
+<section class="card">
+<p>Before writing ANY code, we spent a long time just deciding what to build.
+That's called <b>architecture</b> - it's the blueprint.</p>
+<ul>
+<li>We asked questions first: Who's using it? (You, on your Chromebook.) What must it do? (Draw creatures, evolve them, print cards.)</li>
+<li>We drew the plan as small pieces that each do ONE job: one piece saves Pokemon to folders, one piece talks to the art AI, one piece draws the card on screen. Small pieces are easy to fix and easy to swap.</li>
+<li>Coolest trick: we made the "artist" a plug. The app doesn't care WHICH AI draws the picture - there's a paid super-artist (fast, fancy), a free one that works through Dad's browser, and even a practice one that draws nothing (for testing without spending money). Same plug, different artists.</li>
+</ul>
+<div class="big-idea">Big idea: decide the shape of the thing before building it, and make the parts swappable - like LEGO bricks, not glue.</div>
+</section>
+
+<h2>Skill 2: Context Engineering (the AI only knows what you tell it)</h2>
+<section class="card">
+<p>An AI is like a super-fast new kid at school: really capable, but it doesn't know YOUR rules until you explain them.
+Feeding it the right information is called <b>context engineering</b>.</p>
+<ul>
+<li>We taught it the style: "cel-shaded, like Ken Sugimori's watercolor art, 1-2 main colors, white background". Before that, art came out random. After, everything matched.</li>
+<li>We taught it Pokemon naming: real names are two words squished together (Odd + radish = Oddish, Macho + champ = Machamp). Then it invented <b>Tacoloak</b> (taco + cloak) that evolves into <b>Tacolossus</b> (taco + colossus). See how the "Taco" stays and the ending levels up?</li>
+<li>We built a "canon pack" - a cheat sheet of Pokemon universe facts (the Arceus creation myth, how Pokedex entries sound) that gets slipped into EVERY request. That's why Socko's backstory mentions the Johto region like a real legend.</li>
+</ul>
+<div class="big-idea">Big idea: when the AI's answer is bad, the fix is usually better instructions, not a better AI.</div>
+</section>
+
+<h2>Skill 3: Building with AI (helpers, checkers, and trying again)</h2>
+<section class="card">
+<p>One AI didn't build this alone. It worked like a construction crew:</p>
+<ul>
+<li><b>The architect AI</b> made plans and checked everyone's work (that was the boss AI Dad talked to).</li>
+<li><b>Builder AIs</b> got very exact instructions - down to the actual code - and built one piece at a time.</li>
+<li><b>Checkers ran constantly.</b> We wrote little tests - robot referees - that yell if anything breaks. Every change had to keep all referees happy (we ended with 16 of them).</li>
+<li><b>Nobody was trusted on their word.</b> When a builder said "done!", the boss re-ran the tests itself and looked at real screenshots. Trust, but verify. Mostly verify.</li>
+</ul>
+<p class="story">Best story of the day: to make the free artist work, we needed to sneak a picture out of a web page and into the app.
+Plan 1 failed (the computer blocked the Downloads folder).
+Plan 2 failed (the image link needed a password).
+Plan 3 failed (the browser blocked the shortcut).
+Plan 4 worked: the "copy image" button plus the clipboard - the same copy-paste you use every day.
+That's real engineering: three fails, zero quitting, one win.</p>
+<div class="big-idea">Big idea: professionals don't avoid failing - they fail fast, learn WHY, and try a different door.</div>
+</section>
+
+<h2>The receipts</h2>
+<section class="card">
+<ul>
+<li><b>Gyatt</b>, The Bouncy Bottom Pokemon - first ever created, evolved into royal Gyattress (the crown survived evolution because we showed the AI its old picture).</li>
+<li><b>Tacolossus</b> - proof the naming lessons worked. Signature move: Guac Slam.</li>
+<li><b>Socko</b>, The stinky sock - made for FREE through the browser bridge, with a folk-legend backstory from the canon pack.</li>
+<li>The whole thing cost about one dollar of AI art, and every Pokemon you make is saved forever in Google Drive.</li>
+</ul>
+</section>
+
+<footer>Built 2026-07-12 by Dad + Claude. The grown-up version of this guide is learning_guide.html.</footer>
+</body>
+</html>

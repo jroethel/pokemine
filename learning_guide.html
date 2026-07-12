@@ -114,6 +114,62 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
-<footer>Generated from the 2026-07-12 brainstorming/design session (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code>.</footer>
+<h2>Build execution learnings (2026-07-12, build day)</h2>
+<section class="card">
+<dl>
+<dt>Route work by the One-Minute Test before spinning up machinery.</dt>
+<dd>The 8-task implementation plan looked "agent team"-shaped but scored as ONE AGENT: strictly sequential tasks, exceptional checkability (plan embedded complete code plus expected outputs), judgment already spent at design time. One Opus worker executed all 8 tasks in ~23 minutes for ~$0.14 of API spend; a subagent-per-task team would have added review theater on top of a test suite already doing the reviewing.</dd>
+<dd class="why">Model routing rule honored all day: Fable for architecture, probing, arbitration, and validation; Opus for implementation; Haiku for mechanical fetches.</dd>
+
+<dt>Never accept a worker's self-report; validate against artifacts.</dt>
+<dd>Every agent completion was gated the same way: rerun <code>npm test</code> personally, read <code>git log</code> for commit hygiene and secret leakage, view the actual screenshots, re-derive one number (63x88mm = 238.1x332.6px at 96dpi). All workers were honest today; the gate is what makes that a finding instead of an assumption.</dd>
+
+<dt>Verify the risky contract BEFORE building on it, with the cheapest possible probe.</dt>
+<dd>Before the bridge was built, three live probes against the real signed-in Gemini web app established the whole DOM contract: <code>execCommand('insertText')</code> works untrusted, the Send button only renders once input exists, images land in ~18s as blob URLs, and canvas re-encode extracts them where fetch cannot. The builder agent then coded against verified facts instead of guesses.</dd>
+<dd class="why">The same discipline earlier: two 3-cent API probes pinned "billing works", "response is image/jpeg not PNG", and "aspectRatio 4:3 accepted" before the plan was written.</dd>
+
+<dt>When a transport keeps failing, change strategy instead of escalating.</dt>
+<dd>Getting image bytes out of the browser failed three ways: macOS TCC blocked ~/Downloads, the signed download URL dead-ended at an auth wall, and Brave's Private Network Access blocked page-to-localhost fetches even with correct CORS+PNA headers. The fourth path shipped: Gemini's Copy-image button, through the macOS clipboard via osascript, into the file job queue. Three strikes on one approach means the approach is wrong, not the execution.</dd>
+<dd class="why">Real finding inside the failure: PNA blocking means the extension's service-worker proxy is architecturally REQUIRED for page-to-localhost, not a convenience.</dd>
+
+<dt>A multi-driver contract proves itself when the dumbest driver works.</dt>
+<dd>Socko #003 was fulfilled by a human-grade driver (clipboard and file copy) with zero code changes, confirming the bridge job queue genuinely accepts any driver - extension, agent, or hand.</dd>
+
+<dt>One agent owns one file; art direction and asset generation stay with the orchestrator.</dt>
+<dd>The background-image request arrived mid-flight and was folded into the already-dispatched restyle agent's brief rather than spawning a second writer for <code>style.css</code>. The orchestrator generated and chose the logo and background art (taste calls), agents wired them in (implementation).</dd>
+
+<dt>Flagged blemishes get fixed at the gate, not filed away.</dt>
+<dd>The polish agent flagged bare-string moves rendering an empty card area but left it out-of-scope. The fix (shape validation inside the retry net, ~10 lines plus test) happened at validation time under "make appropriate changes" authority - small enough to do, real enough for a kid to hit.</dd>
+</dl>
+</section>
+
+<h2>Context engineering learnings (2026-07-12)</h2>
+<section class="card">
+<dl>
+<dt>Separate refreshable knowledge from code; inject it, don't bake it.</dt>
+<dd>Pokemon canon lives in NotebookLM (Jeremy curates) -> <code>scripts/refresh-notebook-cache.py</code> (nlm CLI, no MCP round-trips) -> distilled <code>canon-pack.md</code> -> appended to the text-gen system prompt at call time via <code>CANON_FILE</code>. Adding lore never touches code: refresh, re-distill, restart.</dd>
+<dd class="why">Proof it works: Socko's backstory arrived as a Johto folk legend through the bridge path.</dd>
+
+<dt>Design tokens beat vibes when handing aesthetics to an agent.</dt>
+<dd>The grand-reveal restyle worked because the brief was concrete: named hex tokens from two fetched color standards, the handbook cover distilled to CSS-reproducible motifs (45-degree lattice, sticker outlines, chunky stroked type), per-view direction, and hard constraints (print dimensions frozen, no deps). The agent's two deviations were both defensible because the brief made intent legible.</dd>
+
+<dt>Cache what you'll re-read; index what you cached.</dt>
+<dd>17 notebook sources cached locally (~750KB, gitignored, regenerable), distilled twice into committed docs. Two Bulbapedia sources turned out to be Cloudflare-block stubs - caught because the cache made contents inspectable.</dd>
+</dl>
+</section>
+
+<h2>Key decisions register (build day additions)</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>ONE AGENT execution of the build plan</td><td>Subagent-per-task; inline in Fable session</td><td>Sequential tasks, embedded checks; Fable turns reserved for gates per loop-stack rules.</td></tr>
+<tr><td>Move-shape validation triggers a fresh generation attempt</td><td>Accept occasional empty moves; schema-enforce via API</td><td>~10 lines inside the existing retry net; kid-facing blemish eliminated.</td></tr>
+<tr><td>Bridge driver = Brave MV3 extension over HTTP endpoints layered on the file contract</td><td>Agent-session driver; Playwright-over-CDP daemon</td><td>Survives the 2026-08-05 Anthropic sunset, burns no agent tokens; file contract stays driver-agnostic.</td></tr>
+<tr><td>Keep CORS+PNA headers on /api/bridge/*</td><td>Remove as dead code after Brave blocked page drivers</td><td>Standards-track requirement any future page-context driver needs; 10 lines.</td></tr>
+<tr><td>Logo and background generated with Nano Banana, curated by orchestrator</td><td>CSS-only wordmark; stock patterns</td><td>Two candidates each, taste-gated; total ~$0.14 of image spend.</td></tr>
+</table>
+</section>
+
+<footer>Generated from the 2026-07-12 brainstorming/design session and extended the same day with the build/execution sessions (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code> and <code>docs/reference/</code>.</footer>
 </body>
 </html>

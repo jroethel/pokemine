@@ -33,3 +33,28 @@ test('store: art save/read/backup', () => {
   assert.equal(store.readArt(rec.id, 'stage-1.v1.jpg').toString(), 'AAA');
   assert.equal(store.readArt(rec.id, 'stage-1.jpg').toString(), 'BBB');
 });
+
+const { getProvider, withContinuity, listProviders, extFor } = require('../lib/providers');
+
+test('providers: mock generates, stubs throw, unknown throws', async () => {
+  const img = await getProvider('mock').generate({ prompt: 'x' });
+  assert.ok(img.data.length > 0);
+  assert.equal(img.mime, 'image/png');
+  await assert.rejects(getProvider('bridge').generate({}), /bridge: not implemented/);
+  await assert.rejects(getProvider('local').generate({}), /local: not implemented/);
+  assert.throws(() => getProvider('nope'), /unknown provider/);
+  assert.deepEqual(listProviders().map(p => p.name).sort(),
+    ['bridge', 'gemini', 'local', 'mock', 'zai']);
+});
+
+test('providers: withContinuity injects description only when provider lacks reference support', () => {
+  assert.equal(withContinuity('gemini', 'p', 'desc'), 'p');
+  assert.match(withContinuity('zai', 'p', 'desc'), /desc/);
+  assert.equal(withContinuity('zai', 'p', ''), 'p');
+});
+
+test('providers: extFor maps mime to extension', () => {
+  assert.equal(extFor('image/jpeg'), 'jpg');
+  assert.equal(extFor('image/png'), 'png');
+  assert.equal(extFor('image/webp'), 'webp');
+});

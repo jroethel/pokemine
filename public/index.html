@@ -1,3 +1,27 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Pokemine</title></head>
-<body><h1>Pokemine coming soon</h1></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokemine</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <a href="#create" class="brand">Pokemine</a>
+  <a href="#create">+ New</a>
+  <a href="#dex">Pokedex</a>
+  <a href="#print">Print</a>
+  <span id="cost" class="cost"></span>
+</nav>
+
+<main id="view"></main>
+
+<div id="loading" class="hidden">
+  <div class="pokeball"></div>
+  <p id="loading-msg"></p>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

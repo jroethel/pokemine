@@ -82,6 +82,26 @@ test('text: callJSON throws when JSON is malformed twice', async () => {
   } finally { global.fetch = realFetch; }
 });
 
+test('text: callJSON injects CANON_FILE contents into the system prompt', async () => {
+  const realFetch = global.fetch;
+  const canon = path.join(process.env.DATA_DIR, 'canon.md');
+  fs.writeFileSync(canon, 'SECRET_CANON_MARKER');
+  process.env.CANON_FILE = canon;
+  let sent;
+  global.fetch = async (url, opts) => {
+    sent = JSON.parse(opts.body).system_instruction.parts[0].text;
+    return { json: async () => ({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }) };
+  };
+  try {
+    await callJSON('p');
+    assert.match(sent, /## Universe canon/);
+    assert.match(sent, /SECRET_CANON_MARKER/);
+  } finally {
+    global.fetch = realFetch;
+    delete process.env.CANON_FILE;
+  }
+});
+
 test('text: extractJSON parses gemini response text parts', () => {
   const api = { candidates: [{ content: { parts: [{ text: '{"a":' }, { text: '1}' }] } }] };
   assert.deepEqual(extractJSON(api), { a: 1 });

@@ -1,7 +1,7 @@
 # Pokemine - Plan B: Browser Bridge Provider
 
 Date: 2026-07-12
-Status: captured direction, not scheduled. Build only if API costs ever matter.
+Status: built (Brave extension driver). The `bridge` provider is real; the extension in `bridge-extension/` is the driver.
 
 ## Idea
 
@@ -21,6 +21,9 @@ The provider and the driver share a folder (can live in the Drive-synced `DATA_D
 ```
 
 `bridge.generate()` writes the job JSON, then polls for the PNG (timeout ~120s).
+
+Because a browser extension can't read local files, the server also exposes the folder over HTTP so the driver can work remotely from the page: `GET /api/bridge/jobs` (unclaimed jobs, in-memory claim TTL 150s), `POST /api/bridge/jobs/:id/result` (`{b64, mime}` -> writes the image), `POST /api/bridge/jobs/:id/error` (`{message}`), and `POST /api/bridge/ping` (heartbeat feeding `config.bridge.driverConnected`).
+
 Any driver can fulfill jobs; the app never knows or cares which:
 
 - An agent session (Claude Code with browser MCP until 2026-08-05, GLM 5.2 in the Claude Code harness after) watching the folder and puppeting gemini.google.com.

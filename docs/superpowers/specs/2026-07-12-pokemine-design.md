@@ -43,11 +43,12 @@ Provider is selectable from a dropdown in the frontend; default comes from `.env
 |----------|--------|--------------------------|--------------------------------|
 | `gemini` | real   | `gemini-3.1-flash-image` | Yes (native image input)       |
 | `zai`    | real   | `glm-image`              | No, text-description fallback  |
-| `bridge` | stub   | consumer Gemini via jobs | See Plan B spec                |
+| `bridge` | built  | consumer Gemini via jobs | No, text-description fallback  |
 | `local`  | stub   | future: Draw Things / SD | n/a                            |
 
 When a provider lacks reference support, the server injects a detailed text description of the existing creature into the prompt to preserve visual continuity.
 Stubs throw a clear "not implemented" error that surfaces as a friendly UI message.
+`bridge` is built via the Brave extension driver in `bridge-extension/`, which fulfills the file job queue over the server's `/api/bridge/*` HTTP endpoints (see the Plan B spec).
 
 Verified 2026-07-12 with live calls:
 

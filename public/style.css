@@ -108,3 +108,22 @@ textarea, input, select {
   color: #223; font-weight: 700; text-align: center; box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
 }
 .dex-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
+
+/* print view */
+.print-bar { margin-bottom: 1rem; }
+.print-grid { display: flex; flex-wrap: wrap; gap: 8mm 5mm; }
+.print-item.skip .card { opacity: .25; }
+
+@media print {
+  nav, #loading, .no-print { display: none !important; }
+  body { background: #fff; }
+  main { max-width: none; margin: 0; padding: 0; }
+  .print-item.skip { display: none; }
+  .print-grid { gap: 4mm; }
+  .card {
+    width: 63mm; height: 88mm; aspect-ratio: auto; font-size: 8.5pt;
+    border-width: 3mm; border-radius: 4mm; box-shadow: none;
+    break-inside: avoid;
+  }
+}
+@page { margin: 10mm; }

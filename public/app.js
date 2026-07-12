@@ -196,9 +196,27 @@ async function viewDex() {
     }).join('') || '<p>No Pokemon yet. Go make one!</p>'}</div>`;
 }
 
-// Task 7 fills this in
 async function viewPrint() {
-  $('#view').innerHTML = '<h1>Print coming soon</h1>';
+  const all = await api('/pokemon');
+  const items = all.flatMap(rec => rec.stages.map((s, i) => ({ rec, i })));
+  $('#view').innerHTML = `
+    <div class="no-print print-bar">
+      <h1>Print cards</h1>
+      <p>Untick any card you don't want, then hit print. Cards come out real size (63x88mm) - cut inside the yellow border.</p>
+      <button id="do-print" class="big">PRINT!</button>
+    </div>
+    <div class="print-grid">${items.map(({ rec, i }, n) => `
+      <div class="print-item">
+        <label class="no-print"><input type="checkbox" checked data-n="${n}"> include</label>
+        ${cardHTML(rec, i)}
+      </div>`).join('') || '<p>No Pokemon yet. Go make one!</p>'}</div>`;
+  $('#do-print').onclick = () => window.print();
+  document.querySelectorAll('.print-item input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => cb.closest('.print-item').classList.toggle('skip', !cb.checked);
+  });
+  // print view is read-only: kill the inline editors cardHTML sets up
+  document.querySelectorAll('.print-grid [contenteditable]').forEach(el =>
+    el.removeAttribute('contenteditable'));
 }
 
 // ---------- router ----------

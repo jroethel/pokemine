@@ -40,7 +40,6 @@ test('providers: mock generates, stubs throw, unknown throws', async () => {
   const img = await getProvider('mock').generate({ prompt: 'x' });
   assert.ok(img.data.length > 0);
   assert.equal(img.mime, 'image/png');
-  await assert.rejects(getProvider('bridge').generate({}), /bridge: not implemented/);
   await assert.rejects(getProvider('local').generate({}), /local: not implemented/);
   assert.throws(() => getProvider('nope'), /unknown provider/);
   assert.deepEqual(listProviders().map(p => p.name).sort(),
@@ -51,6 +50,48 @@ test('providers: withContinuity injects description only when provider lacks ref
   assert.equal(withContinuity('gemini', 'p', 'desc'), 'p');
   assert.match(withContinuity('zai', 'p', 'desc'), /desc/);
   assert.equal(withContinuity('zai', 'p', ''), 'p');
+});
+
+const { bridgeJobsDir } = require('../lib/providers');
+const PIXEL_B64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+test('providers: bridge writes a job file and returns art a fake driver fulfills', async () => {
+  process.env.BRIDGE_POLL_MS = '30';
+  const dir = bridgeJobsDir();
+  // fake driver: as soon as the job JSON lands, write the png
+  const driver = (async () => {
+    for (let i = 0; i < 100; i++) {
+      const job = fs.readdirSync(dir).find(f => f.endsWith('.json'));
+      if (job) { fs.writeFileSync(path.join(dir, job.replace('.json', '.png')), Buffer.from(PIXEL_B64, 'base64')); return; }
+      await new Promise(r => setTimeout(r, 10));
+    }
+  })();
+  const art = await getProvider('bridge').generate({ prompt: 'a butt pokemon' });
+  await driver;
+  assert.equal(art.mime, 'image/png');
+  assert.ok(art.data.length > 0);
+  // provider tidies the Drive-synced folder afterward
+  assert.equal(fs.readdirSync(dir).filter(f => !f.startsWith('.')).length, 0);
+});
+
+test('providers: bridge surfaces a driver .error and cleans up', async () => {
+  process.env.BRIDGE_POLL_MS = '30';
+  const dir = bridgeJobsDir();
+  const driver = (async () => {
+    for (let i = 0; i < 100; i++) {
+      const job = fs.readdirSync(dir).find(f => f.endsWith('.json'));
+      if (job) { fs.writeFileSync(path.join(dir, job.replace('.json', '.error')), 'gemini tab not signed in'); return; }
+      await new Promise(r => setTimeout(r, 10));
+    }
+  })();
+  await assert.rejects(getProvider('bridge').generate({ prompt: 'x' }), /gemini tab not signed in/);
+  await driver;
+  assert.equal(fs.readdirSync(dir).filter(f => !f.startsWith('.')).length, 0);
+});
+
+test('providers: withContinuity injects description for bridge (no reference support)', () => {
+  assert.match(withContinuity('bridge', 'p', 'desc'), /desc/);
 });
 
 test('providers: extFor maps mime to extension', () => {

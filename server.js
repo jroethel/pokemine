@@ -133,13 +133,35 @@ app.post('/api/trainers', wrap(async (req, res) => {
   const { name, description = '', provider = DEFAULT_PROVIDER } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Type a trainer name first!' });
   const profile = store.trainerCreate({ name: name.trim(), description: description.trim() });
-  const art = await getProvider(provider).generate({
-    prompt: `Pokemon trainer portrait: ${description.trim()}. Friendly bust portrait, cel-shaded Ken Sugimori watercolor style, plain white background. Do not write any text, letters, numbers, logos, or watermarks in the image.`,
-  });
+  // Avatar art and backstory are independent; run them together (art is the long pole).
+  const [art, lore] = await Promise.all([
+    getProvider(provider).generate({
+      prompt: `Pokemon trainer portrait: ${description.trim()}. Friendly bust portrait, cel-shaded Ken Sugimori watercolor style, plain white background. Do not write any text, letters, numbers, logos, or watermarks in the image.`,
+    }),
+    text.trainerBackstory({ name: name.trim(), description: description.trim() })
+      .catch(() => null), // lore is a nice-to-have; never fail trainer creation over it
+  ]);
   logCost(provider);
   const avatar = store.trainerSaveAvatar(profile.slug, `avatar.${extFor(art.mime)}`, art.data);
-  res.json({ slug: profile.slug, name: profile.name, avatar: `/avatars/${profile.slug}/${avatar}`, createdAt: profile.createdAt });
+  if (lore) store.trainerSave(profile.slug, { ...profile, ...lore });
+  res.json({ slug: profile.slug, name: profile.name, ...(lore || {}), avatar: `/avatars/${profile.slug}/${avatar}`, createdAt: profile.createdAt });
 }));
+
+app.get('/api/trainers/:slug', wrap(async (req, res) => {
+  let t = store.trainerGet(req.params.slug);
+  if (!t.backstory) { // trainers made before profiles existed: backfill once, persist
+    try {
+      const lore = await text.trainerBackstory(t);
+      t = store.trainerSave(t.slug, { ...t, ...lore });
+    } catch { /* show what we have; next visit retries */ }
+  }
+  res.json({ ...t, avatar: avatarUrl(t) });
+}));
+
+app.post('/api/trainers/:slug/archive', (req, res) => {
+  store.trainerArchive(req.params.slug);
+  res.json({ ok: true });
+});
 
 app.get('/api/pokemon', (req, res) => res.json(store.list()));
 app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));

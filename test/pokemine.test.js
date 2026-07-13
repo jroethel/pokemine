@@ -285,9 +285,12 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {
     if (String(url).includes('generativelanguage')) {
-      const stage = { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
-        flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' };
-      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ stage, backstory: 'b' }) }] } }] }) };
+      const asked = JSON.parse(opts.body).contents[0].parts[0].text;
+      const payload = asked.includes('A Pokemon trainer named')
+        ? { region: 'Kanto', homeGym: 'Pewter City Rock Gym', backstory: 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.' }
+        : { stage: { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
+            flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' }, backstory: 'b' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
     }
     return realFetch(url, opts);
   };
@@ -300,12 +303,30 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
   }).then(async r => ({ status: r.status, body: await r.json() }));
 
   try {
-    // POST /api/trainers with mock provider -> profile JSON + avatar image file on disk
+    // POST /api/trainers with mock provider -> profile JSON + avatar image file on disk + lore
     let r = await call('/api/trainers', 'POST', { name: 'Max Power', description: 'blue hoodie', provider: 'mock' });
     assert.equal(r.status, 200);
     assert.equal(r.body.name, 'Max Power');
     assert.match(r.body.avatar, /^\/avatars\/max-power\/avatar\.png$/);
     assert.ok(fs.existsSync(path.join(process.env.DATA_DIR, 'trainers', r.body.slug, 'avatar.png')));
+    assert.equal(r.body.region, 'Kanto');
+    assert.equal(r.body.homeGym, 'Pewter City Rock Gym');
+
+    // GET one trainer returns the persisted lore
+    const one = (await call(`/api/trainers/${r.body.slug}`)).body;
+    assert.equal(one.backstory, 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.');
+    assert.equal(one.avatar, r.body.avatar);
+
+    // a pre-profile trainer (no lore on disk) gets backfilled once on GET, then persisted
+    const legacy = store.trainerCreate({ name: 'Old Timer', description: 'vintage cap' });
+    const filled = (await call(`/api/trainers/${legacy.slug}`)).body;
+    assert.equal(filled.region, 'Kanto');
+    assert.equal(store.trainerGet(legacy.slug).homeGym, 'Pewter City Rock Gym');
+
+    // archive soft-deletes: gone from the list, folder moved aside
+    assert.equal((await call(`/api/trainers/${legacy.slug}/archive`, 'POST')).body.ok, true);
+    assert.ok(!(await call('/api/trainers')).body.some(t => t.slug === legacy.slug));
+    assert.ok(!fs.existsSync(path.join(process.env.DATA_DIR, 'trainers', legacy.slug)));
 
     // shows up in the listing with an avatar url
     const list = (await call('/api/trainers')).body;

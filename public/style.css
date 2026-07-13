@@ -33,6 +33,7 @@
 body {
   margin: 0; font-family: -apple-system, "Segoe UI", Verdana, sans-serif;
   color: var(--ink);
+  display: flex; min-height: 100vh;
   /* subtle tiled artwork under a heavy translucent tint so content stays readable */
   background:
     linear-gradient(rgba(234, 241, 253, .88), rgba(234, 241, 253, .88)),
@@ -62,58 +63,59 @@ body {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, .06) 0 46px, rgba(0, 0, 0, .06) 46px 92px);
 }
 
-/* nav - relief bar: gradient within brand blue (light top -> deep bottom),
-   inner top highlight, brand-yellow baseline, drop shadow below. Height ~70% of the burst logo. */
+/* nav - left sidebar rail: burst logo on top, big bold links, trainer chip beside
+   +New, cost badge pinned to the bottom as status. Vertical gradient within brand
+   blue, yellow edge on the right, drop shadow. Print hides it entirely (see @media print). */
 nav {
-  display: flex; gap: 1.1rem; align-items: center; padding: .4rem 1.1rem;
-  min-height: 70px; position: sticky; top: 0; z-index: var(--z-sticky);
+  flex: 0 0 210px; align-self: flex-start;
+  position: sticky; top: 0; height: 100vh; z-index: var(--z-sticky);
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: 1.1rem .85rem;
   background: linear-gradient(180deg,
-    color-mix(in srgb, var(--brand-blue) 76%, #fff) 0%,
-    var(--brand-blue) 45%,
+    color-mix(in srgb, var(--brand-blue) 78%, #fff) 0%,
+    var(--brand-blue) 40%,
     color-mix(in srgb, var(--brand-blue) 82%, #000) 100%);
-  border-top: 1px solid rgba(255, 255, 255, .55);
-  border-bottom: 3px solid var(--brand-yellow);
-  box-shadow: 0 5px 12px rgba(0, 0, 0, .28);
+  border-right: 3px solid var(--brand-yellow);
+  box-shadow: 4px 0 14px rgba(0, 0, 0, .28);
 }
 nav a { color: #fff; text-decoration: none; font-weight: 800; font-family: "PokeDisplay", var(--font-display); letter-spacing: .5px; }
+/* the burst logo fills the rail width; transparent PNG, decoration only */
+nav .brand {
+  display: block; margin: 0 auto .4rem; line-height: 0;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .3));
+}
+nav .brand img { width: 100%; max-width: 170px; height: auto; display: block; }
 nav a:not(.brand) {
-  font-size: 1.18rem; padding: .35rem .8rem; border-radius: 999px;
+  display: block; text-align: center;
+  font-size: 1.32rem; padding: .55rem .8rem; border-radius: 14px;
   text-shadow: 0 1.5px 0 rgba(0, 0, 0, .28);
   transition: background .15s var(--ease);
 }
 nav a:not(.brand):hover, nav a:not(.brand):focus-visible { background: rgba(255, 255, 255, .2); outline: none; }
-/* create: modest plain-wordmark brand in a white chip */
-nav .brand {
-  margin-right: .3rem; display: inline-flex; align-items: center;
-  background: #fff; border-radius: 12px; padding: .28rem .55rem;
-  box-shadow: 0 3px 0 var(--brand-navy); line-height: 0;
+/* +New is the primary action: biggest control in the group, comic red */
+nav a.primary {
+  font-size: 1.7rem; padding: .6rem .8rem;
+  background: var(--poke-red); box-shadow: 0 5px 0 var(--poke-red-deep);
+  border: 2px solid #fff;
 }
-nav .brand img { height: 40px; width: auto; display: block; }
-
-/* non-create: the big comic burst hangs over/below the bar's left end (transparent PNG).
-   Decoration only -> pointer-events:none so it never eats a nav or content click. */
-body:not([data-view="create"]) nav { padding-left: 120px; }
-body:not([data-view="create"]) nav .brand {
-  position: absolute; left: 4px; top: -14px; z-index: 2;
-  margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none;
-  pointer-events: none;
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .3));
+nav a.primary:hover, nav a.primary:focus-visible { background: var(--poke-red-deep); }
+/* trainer chip sits directly under +New, in the click flow (not a corner) */
+nav a.trainer-chip {
+  display: flex; align-items: center; justify-content: center; gap: .45rem;
+  background: rgba(0, 0, 0, .22); padding: .4rem .7rem; border-radius: 14px;
+  font-size: 1.05rem;
 }
-body:not([data-view="create"]) nav .brand img { height: 104px; }
-nav .cost {
-  margin-left: auto; color: #f2f7ff; font-size: .85rem; font-weight: 700;
-  background: rgba(0, 0, 0, .2); padding: .28rem .65rem; border-radius: 999px;
-}
-nav .cost:empty { display: none; }
-nav .trainer-chip {
-  display: inline-flex; align-items: center; gap: .45rem;
-  background: rgba(0, 0, 0, .2); padding: .2rem .8rem .2rem .3rem;
-  border-radius: 999px; font-size: 1.05rem;
-}
-nav .trainer-chip img {
+nav a.trainer-chip img {
   width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
   background: #fff; border: 2px solid #fff; display: block;
 }
+/* cost badge: status, pinned to the bottom, out of the click flow */
+nav .cost {
+  margin-top: auto; text-align: center; color: #f2f7ff;
+  font-size: .82rem; font-weight: 700;
+  background: rgba(0, 0, 0, .2); padding: .35rem .55rem; border-radius: 12px;
+}
+nav .cost:empty { display: none; }
 
 /* faint giant pokeball behind the dex + card views only (route() sets body[data-view]) */
 body[data-view="dex"]::before, body[data-view="card"]::before {
@@ -122,7 +124,9 @@ body[data-view="dex"]::before, body[data-view="card"]::before {
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='none' stroke='%233c5aa6' stroke-width='5'/><rect x='6' y='47' width='88' height='6' fill='%233c5aa6'/><circle cx='50' cy='50' r='15' fill='%23eaf1fd' stroke='%233c5aa6' stroke-width='5'/></svg>") no-repeat center / contain;
 }
 
-main { max-width: 960px; margin: 1.2rem auto; padding: 0 1rem; }
+/* fills the space beside the sidebar; no artificial width cap so the 2x card and its
+   side panel breathe on wide screens. min-width:0 lets flex children wrap instead of overflow. */
+main { flex: 1; min-width: 0; margin: 1.2rem 1.4rem; }
 h1 { color: var(--brand-navy); }
 
 /* buttons + inputs */
@@ -226,8 +230,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 
 /* card */
 .card-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
-/* 230 (not 260) so the 2x card + gap + side fit inside main's content box at 1366; wraps below */
-.side { flex: 1; min-width: 230px; }
+/* grows to fill the space beside the 2x card, but capped so backstory prose stays within
+   the ~75ch readability rule instead of sprawling on ultrawide; wraps under the card below ~910px */
+.side { flex: 1; min-width: 230px; max-width: 560px; }
 .side .hint {
   color: var(--brand-navy); font-size: .9rem; font-weight: 700; margin-bottom: .6rem;
 }
@@ -297,9 +302,11 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   background: var(--type, #a8a878); color: #fff; border-radius: 999px;
   padding: 0 .55em; font-size: .78em; font-weight: 700;
 }
+/* square window: art is now 1:1. object-fit:cover fills it with no letterbox; legacy
+   4:3 images take a small top/bottom crop, which reads cleaner than pillarboxing. */
 .card-art {
   margin: 6px 0; border: 3px solid #d4af37; background: #fff;
-  aspect-ratio: 4/3; overflow: hidden; display: flex; flex-shrink: 0;
+  aspect-ratio: 1/1; overflow: hidden; display: flex; flex-shrink: 0;
 }
 .card-art img { width: 100%; height: 100%; object-fit: cover; }
 .card-page .card-art img { cursor: zoom-in; }
@@ -348,7 +355,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   box-shadow: 0 8px 0 rgba(30, 42, 74, .16), 0 12px 22px rgba(30, 42, 74, .18);
 }
 .dex-item img {
-  width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 9px;
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 9px;
   background: #fff; margin-bottom: .35rem;
 }
 .dex-item:nth-child(6n+1) { --tile: #ffe3a8; }

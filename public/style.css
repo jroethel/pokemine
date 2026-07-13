@@ -374,11 +374,17 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
    4:3 images take a small top/bottom crop, which reads cleaner than pillarboxing. */
 /* gold beveled art window: a raised metallic frame around the art.
    The frame is the padding; box-shadows fake the 3D bevel (bright top-left, dark
-   bottom-right). Landscape 4:3 window like real TCG cards: square (1:1) art takes
-   a modest top/bottom crop via object-fit: cover (lightbox shows it in full), and
-   the reclaimed height is what lets the full frame anatomy fit inside 63x88mm. */
+   bottom-right). 8:5 landscape window, measured off the real cards (Base Set
+   Charizard ~1.60:1, modern Charmander ~1.64:1). object-fit: contain on a white
+   ground: all art is generated on plain white (and auto-cropped subject-tight),
+   so letterboxing is invisible and no creature ever loses its head. */
 .card-art {
-  margin: 5px 0 4px; aspect-ratio: 4/3; flex-shrink: 0;
+  /* overflow:hidden is load-bearing: per css-sizing-4, an aspect-ratio box gets a
+     content-based MINIMUM size while overflow is visible, so the image's intrinsic
+     ratio silently overrode 8/5 and art boxes tracked image dimensions (that was
+     the screen #print height variance). display:flex + min sizes let the img yield. */
+  display: flex; overflow: hidden;
+  margin: 5px 0 4px; aspect-ratio: 8/5; flex-shrink: 0;
   padding: .26em; border-radius: 3px;
   background: linear-gradient(135deg, var(--gold-lite) 0%, var(--gold) 48%, var(--gold-deep) 100%);
   box-shadow:
@@ -387,7 +393,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
     0 1px 3px rgba(0, 0, 0, .35);
 }
 .card-art img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
+  flex: 1; min-width: 0; min-height: 0;
+  width: 100%; height: 100%; object-fit: contain; background: #fff; display: block;
   border-radius: 1px; box-shadow: 0 0 0 1px rgba(30, 20, 0, .55);
 }
 .card-page .card-art img { cursor: zoom-in; }

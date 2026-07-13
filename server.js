@@ -5,6 +5,7 @@ const path = require('path');
 const store = require('./lib/store');
 const text = require('./lib/text');
 const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir } = require('./lib/providers');
+const { autocrop } = require('./lib/autocrop');
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || './data';
@@ -137,7 +138,7 @@ app.post('/api/trainers', wrap(async (req, res) => {
   const [art, lore] = await Promise.all([
     getProvider(provider).generate({
       prompt: `Pokemon trainer portrait: ${description.trim()}. Friendly bust portrait, cel-shaded Ken Sugimori watercolor style, plain white background. Do not write any text, letters, numbers, logos, or watermarks in the image.`,
-    }),
+    }).then(autocrop),
     text.trainerBackstory({ name: name.trim(), description: description.trim() })
       .catch(() => null), // lore is a nice-to-have; never fail trainer creation over it
   ]);
@@ -173,9 +174,9 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   if (!prompt || !prompt.trim()) return res.status(400).json({ error: 'Type an idea first!' });
   const { stage, backstory } = await text.newPokemon(prompt.trim());
   const { artPrompt, ...stageData } = stage;
-  const art = await getProvider(provider).generate({
+  const art = await autocrop(await getProvider(provider).generate({
     prompt: withContinuity(provider, artPrompt, ''),
-  });
+  }));
   logCost(provider);
   const record = store.create({
     ...(trainer ? { createdBy: trainer } : {}),
@@ -208,7 +209,7 @@ The evolved form should look sturdier or sharper than before, same palette, keep
   const reference = p.supportsReference
     ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
     : undefined;
-  const art = await p.generate({ prompt, reference });
+  const art = await autocrop(await p.generate({ prompt, reference }));
   logCost(provider);
   const n = record.stages.length + 1;
   record.stages.push({
@@ -238,7 +239,7 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   // Without a reference image, hand the artist the text description instead (as withContinuity does).
   const composed = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
   const prompt = `${composed}\n${NO_TEXT}`;
-  const art = await p.generate({ prompt, reference });
+  const art = await autocrop(await p.generate({ prompt, reference }));
   logCost(provider);
   store.backupArt(record.id, stage.art);
   stage.art = store.saveArt(record.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);

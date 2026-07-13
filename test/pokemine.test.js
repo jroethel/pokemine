@@ -457,3 +457,20 @@ test('text: evolvedStage passes kid guidance into the concept prompt', async () 
     assert.doesNotMatch(captured, /The kid wants/);
   } finally { global.fetch = realFetch; }
 });
+
+test('autocrop: trims white padding, re-adds uniform margin, survives junk', async () => {
+  const sharp = require('sharp');
+  const { autocrop } = require('../lib/autocrop');
+  // a 400x400 white field with a 100x60 red subject offset toward one corner
+  const src = await sharp({ create: { width: 400, height: 400, channels: 3, background: '#ffffff' } })
+    .composite([{ input: await sharp({ create: { width: 100, height: 60, channels: 3, background: '#cc2222' } }).png().toBuffer(), left: 30, top: 250 }])
+    .png().toBuffer();
+  const out = await autocrop({ data: src, mime: 'image/png' });
+  const meta = await sharp(out.data).metadata();
+  // subject 100x60 + 5% of the short side (60) as margin on each side => 106x66
+  assert.ok(Math.abs(meta.width - 106) <= 2, `width ${meta.width} ~ 106`);
+  assert.ok(Math.abs(meta.height - 66) <= 2, `height ${meta.height} ~ 66`);
+  // placeholder/junk inputs pass through untouched
+  const tiny = { data: Buffer.from('notanimage'), mime: 'image/png' };
+  assert.equal(await autocrop(tiny), tiny);
+});

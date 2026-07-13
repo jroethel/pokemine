@@ -29,7 +29,7 @@ The user test: a kid on a 1366x768 Chromebook understands it in two seconds and 
 - Nothing overflows its container at 1366x768 or narrower; the viewport is part of the design.
 - No artificial page-width cap on `main`. (Case law: a `max-width: 960px` on `main` squeezed the 2x card view - card, idea box, and buttons fought for width. `main` now fills the space beside the rail; individual content blocks self-limit instead.)
 - The card view is a `card-row` flex: the 2x card (660px on screen) beside a side panel bounded to 560px so backstory prose keeps the 75ch rule; it wraps to stacked below ~910px of available width.
-- Card art is square: providers switched from 4:3 to 1:1. `.card-art` and dex tiles use `aspect-ratio: 1/1` with `object-fit: cover`, so square art fills the window and legacy 4:3 images take a small top/bottom crop (cleaner than pillarboxing). Both must look fine.
+- The card art WINDOW is 8:5 landscape (`.card-art { aspect-ratio: 8/5 }`), measured off real cards (Base Set Charizard ~1.60:1, modern Charmander ~1.64:1) with `object-fit: contain` on a white ground: generated art is 1:1 on plain white and auto-cropped subject-tight server-side (`lib/autocrop.js`), so letterboxing is invisible and no creature is ever cropped. Legacy art of any ratio also displays fine.
 
 ## Motion
 
@@ -66,4 +66,5 @@ Rationale: a top bar plus a page-width cap were stealing the vertical space the 
 - Screenshot every changed view at 1366x768 and self-critique against this doc before reporting.
 - Verification servers: scratch DATA_DIR + off-port only; never bind 3000; never kill processes you did not start.
 - Print output is sacred: cards are 63x88mm exactly, chrome never leaks into print. Under print media the art window flex-shrinks so text never bleeds past the card box - verify 0px spill on EVERY card, not just the first card's box size.
-- Deferred check (Jeremy, 2026-07-13): the on-screen `#print` view lets card heights vary with content while actual print output is uniform; a future pass should make the screen view mirror the printed uniformity.
+- Case law (css-sizing-4, found 2026-07-13): a box with `aspect-ratio` gets a CONTENT-BASED MINIMUM size while its overflow is visible, so a child image's intrinsic ratio can silently override the declared aspect. `overflow: hidden` on the box (plus flex + min-size 0 on the child) is load-bearing on `.card-art`. This was the cause of the screen `#print` height variance.
+- The card box itself is `aspect-ratio: 63/88` at every screen size - true card proportions everywhere, not just in print.

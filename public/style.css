@@ -358,11 +358,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 }
 /* square window: art is now 1:1. object-fit:cover fills it with no letterbox; legacy
    4:3 images take a small top/bottom crop, which reads cleaner than pillarboxing. */
-/* gold beveled art window: a raised metallic frame around the (square) art.
+/* gold beveled art window: a raised metallic frame around the art.
    The frame is the padding; box-shadows fake the 3D bevel (bright top-left, dark
-   bottom-right). Handles legacy 4:3 art via object-fit: cover on the inner img. */
+   bottom-right). Landscape 4:3 window like real TCG cards: square (1:1) art takes
+   a modest top/bottom crop via object-fit: cover (lightbox shows it in full), and
+   the reclaimed height is what lets the full frame anatomy fit inside 63x88mm. */
 .card-art {
-  margin: 5px 0 4px; aspect-ratio: 1/1; flex-shrink: 0;
+  margin: 5px 0 4px; aspect-ratio: 4/3; flex-shrink: 0;
   padding: .26em; border-radius: 3px;
   background: linear-gradient(135deg, var(--gold-lite) 0%, var(--gold) 48%, var(--gold-deep) 100%);
   box-shadow:
@@ -551,10 +553,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   .print-item.skip { display: none; }
   .print-grid { gap: 4mm; }
   .card {
-    width: 63mm; height: 88mm; aspect-ratio: auto; font-size: 8.5pt;
+    width: 63mm; height: 88mm; aspect-ratio: auto; font-size: 7pt;
     border-width: 3mm; border-radius: 4mm; box-shadow: none;
-    break-inside: avoid;
+    break-inside: avoid; overflow: hidden;
   }
+  /* On paper the box is immutable, so the ART absorbs any overflow: it may crop
+     tighter than 4:3 on text-heavy cards, but text never bleeds onto a neighbor. */
+  .card .card-art { flex: 0 1 auto; min-height: 5em; overflow: hidden; }
 }
 @page { margin: 10mm; }
 

@@ -138,7 +138,7 @@ function cardHTML(rec, idx) {
   // top-left eyebrow like a real Base Set card: "Basic" or "Stage N · Evolves from <prev>"
   const eyebrow = idx === 0
     ? 'Basic Pokémon'
-    : `Stage ${idx + 1} · Evolves from ${esc(rec.stages[idx - 1].name)}`;
+    : `Stage ${idx} · Evolves from ${esc(rec.stages[idx - 1].name)}`; // TCG convention: 2nd form = Stage 1
   // frame flourish scales with evolution stage (Basic -> Stage 1 -> fully-evolved EX)
   const tier = Math.min(idx + 1, 3);
   const evoBadge = idx > 0

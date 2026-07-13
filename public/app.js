@@ -135,15 +135,26 @@ function openLightbox(src) {
 function cardHTML(rec, idx) {
   const s = rec.stages[idx];
   const type = (s.types?.[0] || 'normal').toLowerCase();
+  // top-left eyebrow like a real Base Set card: "Basic" or "Stage N · Evolves from <prev>"
+  const eyebrow = idx === 0
+    ? 'Basic Pokémon'
+    : `Stage ${idx + 1} · Evolves from ${esc(rec.stages[idx - 1].name)}`;
+  // frame flourish scales with evolution stage (Basic -> Stage 1 -> fully-evolved EX)
+  const tier = Math.min(idx + 1, 3);
+  const evoBadge = idx > 0
+    ? `<img class="evo-badge" src="/media/${rec.id}/${esc(rec.stages[idx - 1].art)}?v=${Date.now()}" alt="Evolves from ${esc(rec.stages[idx - 1].name)}">`
+    : '';
   return `
-  <div class="card type-${esc(type)}">
+  <div class="card type-${esc(type)} stage-${tier}">
+    ${evoBadge}
+    <div class="card-eyebrow">${eyebrow}</div>
     <div class="card-head">
       <span class="card-name" contenteditable data-field="name">${esc(s.name)}</span>
-      <span class="card-hp">HP <span contenteditable data-field="hp">${esc(s.hp)}</span></span>
+      <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
       <span class="type-badge">${esc((s.types || []).join('/'))}</span>
     </div>
     <div class="card-art"><img src="/media/${rec.id}/${s.art}?v=${Date.now()}" alt="${esc(s.name)}"></div>
-    <div class="card-category">${esc(s.category)} - Stage ${idx + 1}</div>
+    <div class="card-category" contenteditable data-field="category">${esc(s.category)}</div>
     <div class="card-moves">
       ${(s.moves || []).map((m, mi) => `
       <div class="move">
@@ -153,7 +164,7 @@ function cardHTML(rec, idx) {
       </div>`).join('')}
     </div>
     <div class="card-flavor" contenteditable data-field="flavor">${esc(s.flavor)}</div>
-    <div class="card-foot">#${String(rec.number).padStart(3, '0')}</div>
+    <div class="card-foot"><span class="foot-brand">Pokémine</span><span class="foot-no">#${String(rec.number).padStart(3, '0')}</span></div>
   </div>`;
 }
 
@@ -205,7 +216,9 @@ async function viewCard(id, stageIdx) {
             <input id="alter-text" placeholder="give it a hat... make it angry... turn it into a dragon...">
             <div class="idea-buttons">
               <button id="alter">Redraw</button>
-              <button id="evolve" class="big">EVOLVE!</button>
+              ${rec.stages.length >= 3
+                ? '<span class="fully-evolved" role="status">🌟 Fully evolved!</span>'
+                : '<button id="evolve" class="big">EVOLVE!</button>'}
             </div>
             ${providerSelect()}
           </div>
@@ -231,7 +244,8 @@ async function viewCard(id, stageIdx) {
     applyEditable(on);
   };
 
-  $('#evolve').onclick = async () => {
+  const evolveBtn = $('#evolve'); // absent once fully evolved (3 stages)
+  if (evolveBtn) evolveBtn.onclick = async () => {
     const instruction = $('#alter-text').value; // optional: steer the evolution
     const r = await generating(() =>
       api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { instruction, provider: currentProvider() } }));

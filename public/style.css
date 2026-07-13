@@ -14,6 +14,15 @@
   --surface: #ffffff;
   --bg: #eaf1fd;
 
+  /* TCG card metals + parchment (Base Set frame realism, CSS only) */
+  --card-yellow: #f7ce35;
+  --gold-lite: #f9e79f;
+  --gold: #d8b13f;
+  --gold-deep: #8a6a1c;
+  --parchment: #fffdf4;
+  --parchment-deep: #f4e7c9;
+  --card-ink: #22201a;
+
   --font-display: "Arial Rounded MT Bold", "Arial Black", Impact, system-ui, sans-serif;
 
   --z-sticky: 5;
@@ -292,10 +301,22 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 
 .card {
   width: 330px; aspect-ratio: 63/88; flex-shrink: 0;
-  border: 10px solid #ffd94a; border-radius: 16px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--type, #a8a878) 32%, #fff), #fff 75%);
-  padding: 8px 11px; display: flex; flex-direction: column;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, .18); font-size: 13px;
+  border: 10px solid var(--card-yellow); border-radius: 16px;
+  /* type-colored frame: a soft cross-hatch paper texture over a type gradient, richer
+     at the edges. Text panels sit on parchment on top, so this shows as the frame. */
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .05) 0 3px, rgba(0, 0, 0, .03) 3px 6px),
+    linear-gradient(165deg,
+      color-mix(in srgb, var(--type, #a8a878) 62%, #fff) 0%,
+      color-mix(in srgb, var(--type, #a8a878) 82%, #fff) 46%,
+      color-mix(in srgb, var(--type, #a8a878) 88%, #000 6%) 100%);
+  padding: 7px 9px; display: flex; flex-direction: column; position: relative;
+  /* black keyline just inside the yellow border + soft drop shadow */
+  box-shadow:
+    inset 0 0 0 1.5px rgba(40, 28, 4, .32),
+    inset 0 0 0.5px 2.5px rgba(255, 255, 255, .18),
+    0 6px 16px rgba(0, 0, 0, .2);
+  font-size: 13px; color: var(--card-ink);
 }
 /* Card view shows the card at double size for easy reading/editing; print stays 63x88mm.
    Internals are em-based off the root font-size, so doubling width + font-size scales the whole card.
@@ -308,20 +329,51 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   .card-page .card { width: 440px; font-size: 17px; }
 }
 
-.card-head { display: flex; align-items: baseline; gap: .5rem; }
-.card-name { font-weight: 800; font-size: 1.15em; flex: 1; }
-.card-hp { font-weight: 800; color: #c22; white-space: nowrap; }
+/* tiny top eyebrow: "Basic Pokémon" / "Stage 2 · Evolves from ..." */
+.card-eyebrow {
+  font-size: .62em; font-weight: 800; letter-spacing: .02em;
+  color: color-mix(in srgb, var(--card-ink) 82%, #fff);
+  text-transform: none; line-height: 1.1; margin: 0 .1em .5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-head { display: flex; align-items: baseline; gap: .4em; }
+.card-name {
+  font-weight: 900; font-size: 1.28em; flex: 1; line-height: 1.05;
+  letter-spacing: -.01em; text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
+}
+.card-hp {
+  font-weight: 900; color: #d02020; white-space: nowrap; font-size: 1.05em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+}
+/* type gem: a small raised type-colored disc */
 .type-badge {
-  background: var(--type, #a8a878); color: #fff; border-radius: 999px;
-  padding: 0 .55em; font-size: .78em; font-weight: 700;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .75), transparent 42%),
+    var(--type, #a8a878);
+  color: #fff; border-radius: 999px; padding: .06em .5em;
+  font-size: .66em; font-weight: 800; text-transform: capitalize;
+  border: 1.5px solid rgba(255, 255, 255, .8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .35);
 }
 /* square window: art is now 1:1. object-fit:cover fills it with no letterbox; legacy
    4:3 images take a small top/bottom crop, which reads cleaner than pillarboxing. */
+/* gold beveled art window: a raised metallic frame around the (square) art.
+   The frame is the padding; box-shadows fake the 3D bevel (bright top-left, dark
+   bottom-right). Handles legacy 4:3 art via object-fit: cover on the inner img. */
 .card-art {
-  margin: 6px 0; border: 3px solid #d4af37; background: #fff;
-  aspect-ratio: 1/1; overflow: hidden; display: flex; flex-shrink: 0;
+  margin: 5px 0 4px; aspect-ratio: 1/1; flex-shrink: 0;
+  padding: .26em; border-radius: 3px;
+  background: linear-gradient(135deg, var(--gold-lite) 0%, var(--gold) 48%, var(--gold-deep) 100%);
+  box-shadow:
+    inset .09em .09em .1em rgba(255, 255, 255, .7),
+    inset -.09em -.09em .12em rgba(90, 66, 12, .8),
+    0 1px 3px rgba(0, 0, 0, .35);
 }
-.card-art img { width: 100%; height: 100%; object-fit: cover; }
+.card-art img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  border-radius: 1px; box-shadow: 0 0 0 1px rgba(30, 20, 0, .55);
+}
 .card-page .card-art img { cursor: zoom-in; }
 
 /* full-res lightbox (card view only) */
@@ -334,14 +386,43 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   max-width: 90vw; max-height: 90vh;
   border-radius: 8px; box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
 }
-.card-category { font-style: italic; font-size: .85em; text-align: center; }
-.card-moves { flex: 1; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
-.move { border-top: 1px solid #00000018; padding-top: 3px; }
-.move b { font-size: 1em; }
-.move .dmg { float: right; font-weight: 800; }
-.move p { margin: 1px 0 0; font-size: .82em; color: #444; }
-.card-flavor { font-style: italic; font-size: .78em; border-top: 1px solid #00000018; padding-top: 3px; }
-.card-foot { text-align: right; font-size: .75em; color: #666; }
+/* species plate: thin beveled gold/parchment strip carrying the category in italics */
+.card-category {
+  font-style: italic; font-weight: 700; font-size: .82em; text-align: center;
+  color: #3a2c07; padding: .12em .5em; border-radius: 3px; margin-bottom: 4px;
+  background: linear-gradient(#f6e6a2 0%, #e2c766 48%, #c9a743 100%);
+  border: 1px solid var(--gold-deep);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), inset 0 -1px 1px rgba(90, 66, 12, .4), 0 1px 2px rgba(0, 0, 0, .18);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .4);
+}
+/* moves + flavor sit on a warm parchment field so text stays crisp over the type frame */
+.card-moves {
+  flex: 1; display: flex; flex-direction: column;
+  background: linear-gradient(var(--parchment), var(--parchment-deep));
+  border: 1px solid rgba(120, 92, 30, .38); border-radius: 4px;
+  padding: .1em .5em; box-shadow: inset 0 1px 4px rgba(90, 66, 12, .12);
+}
+.move { border-top: 1.5px solid rgba(90, 66, 12, .28); padding: .3em 0; }
+.move:first-child { border-top: 0; }
+.move b { font-size: 1.02em; font-weight: 900; color: #201d16; }
+.move .dmg { float: right; font-weight: 900; font-size: 1.3em; line-height: 1; color: #201d16; }
+.move p { margin: .12em 0 0; font-size: .82em; line-height: 1.28; color: #3a352a; }
+/* flavor: italic inside a thin gold-ruled box, like the Base Set flavor plate */
+.card-flavor {
+  font-style: italic; font-size: .78em; line-height: 1.3; color: #33301f;
+  margin-top: 4px; padding: .25em .5em; border-radius: 4px;
+  background: linear-gradient(var(--parchment), var(--parchment-deep));
+  border: 1px solid var(--gold-deep);
+  box-shadow: inset 0 1px 2px rgba(90, 66, 12, .12);
+}
+/* collector line along the bottom edge, sitting on the type frame */
+.card-foot {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-top: 3px; font-size: .68em; font-weight: 700;
+  color: color-mix(in srgb, var(--card-ink) 78%, #fff);
+}
+.card-foot .foot-brand { font-style: italic; opacity: .8; }
+.card-foot .foot-no { letter-spacing: .02em; }
 
 /* type colors */
 .type-normal { --type: #a8a878; } .type-fire { --type: #f08030; }
@@ -353,6 +434,78 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .type-ice { --type: #98d8d8; } .type-poison { --type: #a040a0; }
 .type-ground { --type: #e0c068; } .type-flying { --type: #a890f0; }
 .type-bug { --type: #a8b820; } .type-rock { --type: #b8a038; }
+
+/* ---- stage-tiered flourish: embellishment grows with evolution ----
+   Basic (stage-1): the plain base frame above.
+   Stage 1 (stage-2): silver evo badge + a soft holo sheen + brighter gold.
+   Fully evolved (stage-3): prismatic foil + double gold ring, the "EX" treatment.
+   Holo layers paint on a z-index:-1 ::before so they sit over the type frame but
+   UNDER the parchment panels and text - readability and print both stay intact. */
+
+/* silver evolution badge carrying the previous stage's art, like a real Stage N card */
+.evo-badge {
+  position: absolute; top: 4px; left: 4px; z-index: 1;
+  width: 2.5em; height: 2.5em; border-radius: 50%; object-fit: cover;
+  background: #fff;
+  border: .16em solid #cfd3da;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 1px 2px rgba(255,255,255,.9), 0 2px 4px rgba(0,0,0,.3);
+}
+/* clear space for the badge on the eyebrow + name rows */
+.stage-2 .card-eyebrow, .stage-3 .card-eyebrow,
+.stage-2 .card-head, .stage-3 .card-head { padding-left: 3em; }
+
+/* holo underlay */
+.card.stage-2::before, .card.stage-3::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: 8px; pointer-events: none;
+}
+.card.stage-2::before {
+  background: linear-gradient(118deg, transparent 34%, rgba(255,255,255,.34) 48%, transparent 62%);
+}
+/* fully-evolved prismatic foil + a second bright-gold inner ring */
+.card.stage-3 {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(40, 28, 4, .32),
+    inset 0 0 0 3px rgba(255, 236, 150, .55),
+    inset 0 0 0 4.5px rgba(150, 106, 28, .5),
+    0 6px 18px rgba(0, 0, 0, .28);
+}
+.card.stage-3::before {
+  background:
+    linear-gradient(118deg, transparent 26%, rgba(255,255,255,.5) 46%, transparent 66%),
+    conic-gradient(from 210deg at 30% 20%,
+      rgba(255,90,90,.42), rgba(255,215,90,.42), rgba(120,230,140,.42),
+      rgba(90,190,255,.42), rgba(200,120,255,.42), rgba(255,90,90,.42));
+}
+/* golden shine on the fully-evolved name */
+.card.stage-3 .card-name {
+  text-shadow: 0 0 .35em rgba(255, 205, 90, .85), 0 1px 0 rgba(255, 255, 255, .5);
+}
+/* the art window steps up its metal per tier */
+.stage-2 .card-art { padding: .3em; }
+.stage-3 .card-art {
+  padding: .34em;
+  background: linear-gradient(135deg, #fff2b0 0%, var(--gold-lite) 30%, var(--gold) 60%, var(--gold-deep) 100%);
+  box-shadow:
+    inset .1em .1em .1em rgba(255,255,255,.85),
+    inset -.1em -.1em .12em rgba(90,66,12,.85),
+    0 0 .35em rgba(255, 225, 130, .8),
+    0 1px 3px rgba(0,0,0,.4);
+}
+/* rarity mark in the collector line, scaling with tier (decorative, like ●/◆/★) */
+.card-foot .foot-no::after { margin-left: .3em; color: var(--gold-deep); }
+.stage-1 .card-foot .foot-no::after { content: "\25CF"; font-size: .8em; }
+.stage-2 .card-foot .foot-no::after { content: "\2666"; }
+.stage-3 .card-foot .foot-no::after { content: "\2605\2605"; color: #b8860b; letter-spacing: -.1em; }
+
+/* fully-evolved state: replaces EVOLVE!, celebratory but clearly not a live button */
+.fully-evolved {
+  flex: 2; display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  font-family: "PokeDisplay", var(--font-display); font-size: 1.2rem; letter-spacing: .02em;
+  text-transform: uppercase; color: #8a6a1c; padding: .7rem 1rem; border-radius: 16px;
+  background: linear-gradient(#fff6d8, #ffe9a6); border: 2px dashed #d8b13f;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7); cursor: default; text-align: center;
+}
 
 /* pokedex - pastel diamond tiles from the cover */
 .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }

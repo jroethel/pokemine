@@ -3,10 +3,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 let config = { providers: [], default: 'gemini' };
-const LOADING_MSGS = [
-  'Catching wild pixels...', 'Shaking the Pokeball...', 'Professor Oak is sketching...',
-  'Mixing up silly DNA...', 'Teaching it its first move...', 'Almost hatched...',
-];
+const LOADING_MSGS = window.LOADING_MSGS || ['Catching wild pixels...'];
 
 // ---------- helpers ----------
 
@@ -23,8 +20,8 @@ async function api(path, opts = {}) {
 
 let msgTimer;
 function showLoading() {
-  let i = 0;
-  $('#loading-msg').textContent = LOADING_MSGS[0];
+  let i = Math.floor(Math.random() * LOADING_MSGS.length); // random start = variety each time
+  $('#loading-msg').textContent = LOADING_MSGS[i];
   $('#loading').classList.remove('hidden');
   msgTimer = setInterval(() => {
     $('#loading-msg').textContent = LOADING_MSGS[++i % LOADING_MSGS.length];

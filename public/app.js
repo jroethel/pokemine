@@ -163,10 +163,13 @@ async function viewCard(id, stageIdx) {
         ${cardHTML(rec, idx)}
         <div class="side">
           <div class="hint">Tap the card text to edit it!</div>
-          <div class="actions">
-            <input id="alter-text" placeholder="Change its LOOK (give it a hat, make it angry...)">
-            <button id="alter">Redraw</button>
-            <button id="evolve" class="big">EVOLVE!</button>
+          <div class="actions idea-box">
+            <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
+            <input id="alter-text" placeholder="give it a hat... make it angry... turn it into a dragon...">
+            <div class="idea-buttons">
+              <button id="alter">Redraw</button>
+              <button id="evolve" class="big">EVOLVE!</button>
+            </div>
             ${providerSelect()}
           </div>
           ${rec.stages[0].prompt ? `<div class="born-from">Born from: "${esc(rec.stages[0].prompt)}"

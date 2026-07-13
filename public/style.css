@@ -312,3 +312,14 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
     transition-duration: .001ms !important;
   }
 }
+
+/* idea box: one input visibly feeding both Redraw and EVOLVE */
+.idea-box {
+  background: #fff; border: 2px solid #b9c9e8; border-radius: 14px;
+  padding: 0.8rem 0.9rem;
+}
+.idea-box input { border-style: dashed; }
+.idea-label { font-size: 0.85rem; font-weight: 700; color: #3c5aa6; }
+.idea-buttons { display: flex; gap: 0.6rem; }
+.idea-buttons #alter { flex: 1; }
+.idea-buttons #evolve { flex: 2; }

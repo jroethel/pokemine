@@ -21,10 +21,13 @@ const session = { images: 0, cost: 0 };
 function readLedger() {
   try {
     const l = JSON.parse(fs.readFileSync(costsPath, 'utf8'));
-    return { images: l.images || 0, cost: l.cost || 0, byProvider: l.byProvider || {} };
+    return { images: l.images || 0, cost: l.cost || 0, byProvider: l.byProvider || {}, note: l.note };
   } catch (e) {
-    if (e.code !== 'ENOENT') console.warn(`costs.json unreadable (${e.message}), starting fresh`);
-    return { images: 0, cost: 0, byProvider: {} };
+    if (e.code === 'ENOENT') return { images: 0, cost: 0, byProvider: {} };
+    // Unreadable but present (e.g. a Drive streaming stall): never risk clobbering
+    // the real ledger with a fresh one - callers must skip the write this round.
+    console.warn(`costs.json unreadable (${e.message}); skipping ledger update to protect it`);
+    return null;
   }
 }
 
@@ -33,6 +36,7 @@ function logCost(provider) {
   session.images++;
   session.cost += amt;
   const ledger = readLedger();
+  if (!ledger) return; // protect an unreadable ledger; session still counts
   ledger.images++;
   ledger.cost += amt;
   ledger.byProvider[provider] = (ledger.byProvider[provider] || 0) + 1;
@@ -106,7 +110,8 @@ app.post('/api/bridge/ping', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-  const ledger = readLedger();
+  // null = ledger temporarily unreadable (Drive stall); show zeros rather than erroring
+  const ledger = readLedger() || { images: 0, cost: 0 };
   res.json({
     providers: listProviders(),
     default: DEFAULT_PROVIDER,

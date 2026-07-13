@@ -224,6 +224,18 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   aspect-ratio: 4/3; overflow: hidden; display: flex; flex-shrink: 0;
 }
 .card-art img { width: 100%; height: 100%; object-fit: cover; }
+.card-page .card-art img { cursor: zoom-in; }
+
+/* full-res lightbox (card view only) */
+.lightbox {
+  position: fixed; inset: 0; z-index: var(--z-overlay);
+  background: rgba(0, 0, 0, .85); cursor: zoom-out;
+  display: flex; align-items: center; justify-content: center;
+}
+.lightbox img {
+  max-width: 90vw; max-height: 90vh;
+  border-radius: 8px; box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
 .card-category { font-style: italic; font-size: .85em; text-align: center; }
 .card-moves { flex: 1; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .move { border-top: 1px solid #00000018; padding-top: 3px; }

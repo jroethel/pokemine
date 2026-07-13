@@ -83,6 +83,17 @@ function bindProviderSelect() {
   if (sel) sel.onchange = () => { localStorage.provider = sel.value; updateBridgeHint(); };
 }
 
+function openLightbox(src) {
+  const ov = document.createElement('div');
+  ov.className = 'lightbox';
+  ov.innerHTML = `<img src="${src}" alt="">`;
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  ov.onclick = close;
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+}
+
 // ---------- card ----------
 
 function cardHTML(rec, idx) {
@@ -171,6 +182,9 @@ async function viewCard(id, stageIdx) {
       api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { instruction, provider: currentProvider() } }));
     if (r) { $('#alter-text').value = ''; location.hash = `#card/${rec.id}/${r.stages.length - 1}`; }
   };
+
+  const artImg = $('.card-art img');
+  if (artImg) artImg.onclick = () => openLightbox(artImg.src);
 
   const useOrigin = $('#use-origin');
   if (useOrigin) useOrigin.onclick = () => { $('#alter-text').value = rec.stages[0].prompt; };

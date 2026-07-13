@@ -251,6 +251,14 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.equal(r.body.stages[1].name, 'Gyattzilla');
     assert.equal(r.body.stages[1].art, 'stage-2.png');
 
+    // second evolution works (3 stages total), a third is refused: TCG rule
+    r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { provider: 'mock' });
+    assert.equal(r.body.stages.length, 3);
+    r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { provider: 'mock' });
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /fully evolved/i);
+    assert.equal(store.get(rec.id).stages.length, 3);
+
     r = await call(`/api/pokemon/${rec.id}/alter`, 'POST', { instruction: 'angrier', stage: 0, provider: 'mock' });
     assert.ok(store.readArt(rec.id, 'stage-1.v1.png').length > 0);
     assert.match(r.body.stages[0].description, /angrier/);

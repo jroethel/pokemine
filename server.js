@@ -188,6 +188,10 @@ app.post('/api/pokemon', wrap(async (req, res) => {
 app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   const { provider = DEFAULT_PROVIDER, instruction } = req.body;
   const record = store.get(req.params.id);
+  // Like the real TCG: Basic -> Stage 1 -> Stage 2, then fully evolved.
+  if (record.stages.length >= 3) {
+    return res.status(400).json({ error: `${record.stages[2].name} is fully evolved! No Pokemon evolves more than twice.` });
+  }
   const prev = record.stages[record.stages.length - 1];
   const guidance = (instruction || '').trim();
   // Steering applies at both levels: the text model shapes the evolution concept

@@ -3,7 +3,7 @@
 Canonical home for Pokemon visual reference assets (images gitignored; this README is tracked).
 Captured 2026-07-12 from the poke-book tab group (Geppetto's Toys product gallery + Amazon gallery for the same book, ISBN 9781339028019), merged with Jeremy's own grabs of the same gallery (higher-resolution copies kept: ~2367x1772 vs 1500x1125).
 Purpose: visual reference for a future "Pokedex page" / "his own Pokedex book" rendering mode and general motif design.
-Convention for future expansion: one subfolder per asset family (e.g. `cards/` for TCG card fronts, `sprites/`, `books/<isbn>/`).
+Scope boundary (2026-07-13): the pokebook is inspiration for the `#card` PAGE surroundings (how info is presented next to the card) and the future Pokedex-book view. The card frames themselves are their own artifact with their own references in `../cards/`.
 
 ## Files
 
@@ -29,6 +29,6 @@ Convention for future expansion: one subfolder per asset family (e.g. `cards/` f
 - A "Pokedex page" view could render each creature like these spreads: the record already has every field except phonetic pronunciation and height/weight (cheap to add to STAGE_SHAPE).
 - The entry anatomy maps 1:1 onto `pokemon.json` fields; the halftone + angled-banner look is pure CSS.
 
-## Queued task (lesser agent, later)
+## Queued task - DONE 2026-07-13
 
-Gather reference images of actual Pokemon TCG cards (front frames across types, including Trainer/Energy variants) into `cards/` here, for tuning the HTML/CSS card frame. Sources: TCG product galleries or pokemontcg.io image API. Owner: a future Sonnet/GLM session; no judgment required beyond "is it a clear card front".
+TCG card fronts gathered and moved to `resources/cards/` (their own artifact family).

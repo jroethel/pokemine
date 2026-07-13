@@ -62,63 +62,56 @@ body {
     repeating-linear-gradient(45deg, rgba(255, 255, 255, .06) 0 46px, rgba(0, 0, 0, .06) 46px 92px);
 }
 
-/* nav */
+/* nav - relief bar: gradient within brand blue (light top -> deep bottom),
+   inner top highlight, brand-yellow baseline, drop shadow below. Height ~70% of the burst logo. */
 nav {
-  display: flex; gap: 1.1rem; align-items: center; padding: .5rem 1rem;
-  background: var(--brand-blue); position: sticky; top: 0; z-index: var(--z-sticky);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, .18);
+  display: flex; gap: 1.1rem; align-items: center; padding: .4rem 1.1rem;
+  min-height: 70px; position: sticky; top: 0; z-index: var(--z-sticky);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--brand-blue) 76%, #fff) 0%,
+    var(--brand-blue) 45%,
+    color-mix(in srgb, var(--brand-blue) 82%, #000) 100%);
+  border-top: 1px solid rgba(255, 255, 255, .55);
+  border-bottom: 3px solid var(--brand-yellow);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, .28);
 }
 nav a { color: #fff; text-decoration: none; font-weight: 800; font-family: "PokeDisplay", var(--font-display); letter-spacing: .5px; }
 nav a:not(.brand) {
-  padding: .3rem .7rem; border-radius: 999px;
+  font-size: 1.18rem; padding: .35rem .8rem; border-radius: 999px;
+  text-shadow: 0 1.5px 0 rgba(0, 0, 0, .28);
   transition: background .15s var(--ease);
 }
-nav a:not(.brand):hover, nav a:not(.brand):focus-visible { background: rgba(255, 255, 255, .18); outline: none; }
+nav a:not(.brand):hover, nav a:not(.brand):focus-visible { background: rgba(255, 255, 255, .2); outline: none; }
+/* create: modest plain-wordmark brand in a white chip */
 nav .brand {
-  margin-right: .5rem; display: inline-flex; align-items: center;
+  margin-right: .3rem; display: inline-flex; align-items: center;
   background: #fff; border-radius: 12px; padding: .28rem .55rem;
   box-shadow: 0 3px 0 var(--brand-navy); line-height: 0;
 }
-nav .brand img { height: 30px; width: auto; display: block; }
+nav .brand img { height: 40px; width: auto; display: block; }
 
-/* POW starburst brand: on every view except create, the small white brand box becomes a
-   big comic starburst hanging below the nav's left end, wordmark inside, bar shooting out right.
-   Two stacked clip-path stars (red outer, yellow inner) + a white drop-shadow rim for the gap. */
-body:not([data-view="create"]) nav { padding-left: 164px; }
+/* non-create: the big comic burst hangs over/below the bar's left end (transparent PNG).
+   Decoration only -> pointer-events:none so it never eats a nav or content click. */
+body:not([data-view="create"]) nav { padding-left: 120px; }
 body:not([data-view="create"]) nav .brand {
-  position: absolute; left: 12px; top: -3px; z-index: 2;
-  width: 140px; height: 140px; padding: 0; border-radius: 0;
-  background: var(--poke-red-deep); box-shadow: none; line-height: normal;
-  clip-path: polygon(50% 0%, 58% 25.3%, 79.4% 9.5%, 71% 34.7%, 97.6% 34.5%, 76% 50%, 97.6% 65.5%,
-    71% 65.3%, 79.4% 90.5%, 58% 74.7%, 50% 100%, 42% 74.7%, 20.6% 90.5%, 29% 65.3%, 2.4% 65.5%,
-    24% 50%, 2.4% 34.5%, 29% 34.7%, 20.6% 9.5%, 42% 25.3%);
-  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35));
-  display: flex; align-items: center; justify-content: center;
+  position: absolute; left: 4px; top: -14px; z-index: 2;
+  margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .3));
 }
-/* inner yellow star: nested same orientation, slight 5deg rotation; white drop-shadow = the gap */
-body:not([data-view="create"]) nav .brand::before {
-  content: ""; position: absolute; inset: 0; background: var(--brand-yellow);
-  clip-path: polygon(53.7% 7.2%, 59% 28.8%, 78.2% 17.5%, 69.7% 38.2%, 91.9% 40.3%, 72.9% 52%,
-    89.6% 66.8%, 67.4% 65.1%, 72.1% 86.9%, 55.2% 72.4%, 46.3% 92.8%, 41% 71.2%, 21.8% 82.5%,
-    30.3% 61.8%, 8.1% 59.7%, 27.1% 48%, 10.4% 33.2%, 32.6% 34.9%, 27.9% 13.1%, 44.8% 27.6%);
-  filter: drop-shadow(0 0 2.5px #fff) drop-shadow(0 0 1.5px #fff);
-}
-body:not([data-view="create"]) nav .brand img {
-  position: relative; z-index: 1; width: 82px; height: auto;
-  background: none; padding: 0; border-radius: 4px;
-}
+body:not([data-view="create"]) nav .brand img { height: 104px; }
 nav .cost {
-  margin-left: auto; color: #eaf1fd; font-size: .82rem; font-weight: 700;
-  background: rgba(0, 0, 0, .16); padding: .25rem .6rem; border-radius: 999px;
+  margin-left: auto; color: #f2f7ff; font-size: .85rem; font-weight: 700;
+  background: rgba(0, 0, 0, .2); padding: .28rem .65rem; border-radius: 999px;
 }
 nav .cost:empty { display: none; }
 nav .trainer-chip {
-  display: inline-flex; align-items: center; gap: .4rem; margin-left: .6rem;
-  background: rgba(0, 0, 0, .16); color: #fff; padding: .18rem .7rem .18rem .28rem;
-  border-radius: 999px; letter-spacing: 0;
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: rgba(0, 0, 0, .2); padding: .2rem .8rem .2rem .3rem;
+  border-radius: 999px; font-size: 1.05rem;
 }
 nav .trainer-chip img {
-  width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+  width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
   background: #fff; border: 2px solid #fff; display: block;
 }
 

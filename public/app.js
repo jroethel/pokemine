@@ -336,11 +336,9 @@ function marqueeHTML(p) {
       : '<div class="marquee-avatar-none">?</div>'}</div>
     <div class="marquee-info">
       <h1 class="display marquee-name">${esc(p.name)}</h1>
-      ${p.region || p.homeGym ? `<div class="marquee-meta">
+      ${p.region || p.homeGym || p.favoritePokemon || p.finishingMove ? `<div class="marquee-meta">
         ${p.region ? `<span class="meta-pill"><b>Region</b> ${esc(p.region)}</span>` : ''}
         ${p.homeGym ? `<span class="meta-pill"><b>Home Gym</b> ${esc(p.homeGym)}</span>` : ''}
-      </div>` : ''}
-      ${p.favoritePokemon || p.finishingMove ? `<div class="marquee-meta">
         ${p.favoritePokemon ? `<span class="meta-pill"><b>Favorite Pokemon</b> ${esc(p.favoritePokemon)}</span>` : ''}
         ${p.finishingMove ? `<span class="meta-pill"><b>Finishing Move</b> ${esc(p.finishingMove)}</span>` : ''}
       </div>` : ''}

@@ -27,6 +27,9 @@ The user test: a kid on a 1366x768 Chromebook understands it in two seconds and 
 - Vary spacing for rhythm; nested cards are always wrong; flexbox for 1D, grid for 2D.
 - Semantic z-index scale (content < sticky nav < overlay < lightbox < loading). No 9999.
 - Nothing overflows its container at 1366x768 or narrower; the viewport is part of the design.
+- No artificial page-width cap on `main`. (Case law: a `max-width: 960px` on `main` squeezed the 2x card view - card, idea box, and buttons fought for width. `main` now fills the space beside the rail; individual content blocks self-limit instead.)
+- The card view is a `card-row` flex: the 2x card (660px on screen) beside a side panel bounded to 560px so backstory prose keeps the 75ch rule; it wraps to stacked below ~910px of available width.
+- Card art is square: providers switched from 4:3 to 1:1. `.card-art` and dex tiles use `aspect-ratio: 1/1` with `object-fit: cover`, so square art fills the window and legacy 4:3 images take a small top/bottom crop (cleaner than pillarboxing). Both must look fine.
 
 ## Motion
 
@@ -41,9 +44,22 @@ The user test: a kid on a 1366x768 Chromebook understands it in two seconds and 
 
 ## Brand assets
 
-- `public/logo.jpg` - plain wordmark (landing hero).
-- `public/logo-burst.jpg` - wordmark in comic starburst (nav brand on non-landing views). Source: `resources/logo/logo-burst-2.jpg`; alternate candidate `-1` is softer.
-- Nav proportions: menu bar height ~70% of the rendered burst-logo height; the burst overlaps the bar so the bar appears to shoot out of it (see `resources/logo/Screenshot 2026-07-12 at 10.16.06 PM.png`).
+- `public/logo.jpg` - plain wide wordmark (1376x768); used as the create-view in-page hero (`.create-logo`) only.
+- `public/logo-burst.png` - wordmark in a comic starburst, transparent background, square (1024x1024).
+  This is the nav brand on EVERY view; there is no per-view swap.
+  (Case law: a stale JS swap set the brand to `logo.jpg` on `#create`, so the sidebar showed the plain wordmark there. Removed - the nav brand is always the burst.)
+
+## Nav: the left sidebar rail
+
+The nav is a fixed-width LEFT sidebar rail (~210px), not a top bar.
+Rationale: a top bar plus a page-width cap were stealing the vertical space the 2x card view needs; a left rail frees the full height.
+
+- Order, top to bottom: burst logo (fills the rail, ~150-170px tall), the `+ New` primary link, the trainer chip directly under it, then Pokedex / Print / Help, and the cost badge pinned to the bottom.
+- The burst logo is intentionally large (it fills the rail width); a cramped small logo in a wide rail reads as a mistake.
+- `+ New` is the primary action: comic red, the biggest control in the group (primary action is biggest in its group).
+- The trainer chip and every nav link are interactive, so they live in the click flow of the rail; only the cost badge is status, pinned to the bottom out of the flow.
+- Nav links are Luckiest Guy, ~1.3rem, block-level with generous padding - big trackpad targets for kids.
+- The rail is `position: sticky; height: 100vh` so it stays put while `main` scrolls; it is `display:none` in print and never affects print metrics.
 
 ## Process rules for agents
 

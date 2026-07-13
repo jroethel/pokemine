@@ -171,6 +171,10 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 <dt>Feature requests arriving mid-agent-run get routed by file ownership.</dt>
 <dd>Seven additions landed while one agent was mid-pass. Rule held throughout: whoever owns the file makes the change. Agent owned server.js/app.js (got the queued additions via messages); the orchestrator owned lib/text.js and new content files (edited directly, commits held until the agent released the repo to avoid git index races).</dd>
 
+<dt>Verify before accusing: the orchestrator pattern-matched a failure to an innocent worker.</dt>
+<dd>When the kids' Pokedex "lost" entries mid-play, the orchestrator fired an urgent stop-order at the feature agent, blaming its Release/Redraw testing - without checking evidence first. The agent proved innocence with receipts: it had unprompted used a throwaway /tmp data dir on a separate port and never clicked the suspect buttons. Actual causes: a dead/stale server process, a mock-artist selection, and probable Drive streaming stalls. The data was intact the whole time.</dd>
+<dd class="why">The worker doing the right thing unprompted deserved better than a pattern-matched accusation. Diagnose from artifacts (ls, ps, curl) BEFORE assigning cause - the same evidence-first rule that applies to code applies to blame.</dd>
+
 <dt>The friendly error is UX; the console error is forensics; neither is a log.</dt>
 <dd>"The Pokemon escaped!" plus console.error worked until the terminal closed. Durable one-line entries now append to the Drive-synced <code>errors.log</code>, and the cost ledger got the same treatment (<code>costs.json</code>: session and all-time, per provider) after the browser-side counter proved forgettable.</dd>
 </dl>

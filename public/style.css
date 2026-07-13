@@ -298,9 +298,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 /* Team Rocket red with a yellow ring: destructive-but-fun, kept far from EVOLVE
    so it isn't hit by accident (also styles "Join Team Rocket" on #trainers) */
 .release {
-  margin-top: 1.4rem; background: var(--poke-red); color: #fff;
-  box-shadow: 0 3px 0 var(--poke-red-deep);
-  border: 2px solid var(--brand-yellow); font-size: .8rem; font-weight: 800; padding: .4rem .9rem;
+  margin-top: 1.4rem; background: #c25650; color: #fff;
+  box-shadow: 0 3px 0 #93403b;
+  border: 2px solid #eed27c; font-size: .8rem; font-weight: 800; padding: .4rem .9rem;
 }
 .release:hover { filter: brightness(1.1); }
 .release:active { transform: translateY(2px); box-shadow: none; }
@@ -334,11 +334,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
    Internals are em-based off the root font-size, so doubling width + font-size scales the whole card.
    Screen-only so a Ctrl+P from the card view never overrides the print size rule. */
 @media screen {
-  .card-page .card { width: 660px; font-size: 26px; }
-}
-/* Short viewports (kids' 1366x768 Chromebooks): shrink so moves/flavor stay above the fold. */
-@media screen and (max-height: 900px) {
-  .card-page .card { width: 440px; font-size: 17px; }
+  /* Fluid: the card is ~37.4em tall and sits ~68px down, so this font-size is
+     "the largest that keeps the whole card above the fold", capped at 28.5px
+     (the +10% size). Width rides along in em so internals scale as one unit. */
+  .card-page .card {
+    width: 25.47em;
+    font-size: clamp(14px, calc((100vh - 78px) / 37.4), 28.5px);
+  }
 }
 
 /* tiny top eyebrow: "Basic Pokémon" / "Stage 2 · Evolves from ..." */
@@ -683,7 +685,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   background: #fff; border: 2px solid #b9c9e8; border-radius: 14px;
   padding: 0.8rem 0.9rem;
 }
-.idea-box input { border-style: dashed; }
+.idea-box input, .idea-box textarea { border-style: dashed; }
+/* auto-grows via JS (one blank line kept free); scrolls past ~8 lines */
+.idea-box textarea { resize: none; overflow-y: auto; line-height: 1.35; }
 .idea-label { font-size: 0.85rem; font-weight: 700; color: #3c5aa6; }
 .idea-buttons { display: flex; gap: 0.6rem; }
 .idea-buttons #alter { flex: 1; }

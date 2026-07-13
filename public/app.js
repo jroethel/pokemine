@@ -215,7 +215,7 @@ async function viewCard(id, stageIdx) {
             <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
           <div class="actions idea-box">
             <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
-            <input id="alter-text" placeholder="give it a hat... make it angry... turn it into a dragon...">
+            <textarea id="alter-text" rows="2" placeholder="give it a hat... make it angry... turn it into a dragon..."></textarea>
             <div class="idea-buttons">
               <button id="alter">Redraw</button>
               ${rec.stages.length >= 3
@@ -232,6 +232,17 @@ async function viewCard(id, stageIdx) {
       </div>
     </div>`;
   bindProviderSelect();
+
+  // Idea box grows with typing, always keeping one blank line of breathing room;
+  // caps at ~8 lines, after which it scrolls.
+  const idea = $('#alter-text');
+  const growIdea = () => {
+    idea.style.height = 'auto';
+    const line = parseFloat(getComputedStyle(idea).lineHeight) || 20;
+    idea.style.height = `${Math.min(idea.scrollHeight + line, line * 8)}px`;
+  };
+  idea.oninput = growIdea;
+  growIdea();
 
   // "Highlight editable": outline every editable field; state persists across cards
   const cardPage = $('.card-page');

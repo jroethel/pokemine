@@ -215,6 +215,8 @@ app.patch('/api/pokemon/:id', wrap(async (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err);
+  fs.appendFileSync(path.resolve(DATA_DIR, 'errors.log'),
+    `${new Date().toISOString()} ${req.method} ${req.path} :: ${err.message}\n`);
   res.status(500).json({ error: 'The Pokemon escaped! Try again!', detail: err.message });
 });
 

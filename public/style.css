@@ -79,6 +79,13 @@ nav .cost {
 }
 nav .cost:empty { display: none; }
 
+/* faint giant pokeball behind the dex + card views only (route() sets body[data-view]) */
+body[data-view="dex"]::before, body[data-view="card"]::before {
+  content: ""; position: fixed; right: -8vh; bottom: -8vh;
+  width: 85vh; height: 85vh; z-index: -1; opacity: .06; pointer-events: none;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='none' stroke='%233c5aa6' stroke-width='5'/><rect x='6' y='47' width='88' height='6' fill='%233c5aa6'/><circle cx='50' cy='50' r='15' fill='%23eaf1fd' stroke='%233c5aa6' stroke-width='5'/></svg>") no-repeat center / contain;
+}
+
 main { max-width: 960px; margin: 1.2rem auto; padding: 0 1rem; }
 h1 { color: var(--brand-navy); }
 
@@ -318,6 +325,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 
 @media print {
   nav, #loading, .no-print { display: none !important; }
+  body::before { content: none !important; }
   body { background: #fff; background-image: none; }
   main { max-width: none; margin: 0; padding: 0; }
   .print-item.skip { display: none; }

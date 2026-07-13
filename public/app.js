@@ -289,6 +289,7 @@ async function route() {
   try { config = await api('/config'); } catch { /* keep last-known config */ }
   updateCostBadge();
   const [view, id, extra] = location.hash.slice(1).split('/');
+  document.body.dataset.view = view || 'create';
   try {
     if (view === 'card' && id) return await viewCard(id, extra === undefined ? undefined : +extra);
     if (view === 'dex') return await viewDex();

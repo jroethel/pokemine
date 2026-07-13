@@ -162,7 +162,8 @@ async function viewCard(id, stageIdx) {
       <div class="card-row">
         ${cardHTML(rec, idx)}
         <div class="side">
-          <div class="hint">Tap the card text to edit it!</div>
+          <div class="hint">Tap the card text to edit it!
+            <button id="toggle-editable" class="ghost-btn no-print">Highlight editable</button></div>
           <div class="actions idea-box">
             <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
             <input id="alter-text" placeholder="give it a hat... make it angry... turn it into a dragon...">
@@ -181,6 +182,17 @@ async function viewCard(id, stageIdx) {
       </div>
     </div>`;
   bindProviderSelect();
+
+  // "Highlight editable": outline every editable field; state persists across cards
+  const cardPage = $('.card-page');
+  const toggle = $('#toggle-editable');
+  const applyEditable = on => { cardPage.classList.toggle('show-editable', on); toggle.classList.toggle('on', on); };
+  applyEditable(!!localStorage.showEditable);
+  toggle.onclick = () => {
+    const on = !cardPage.classList.contains('show-editable');
+    if (on) localStorage.showEditable = '1'; else localStorage.removeItem('showEditable');
+    applyEditable(on);
+  };
 
   $('#evolve').onclick = async () => {
     const instruction = $('#alter-text').value; // optional: steer the evolution

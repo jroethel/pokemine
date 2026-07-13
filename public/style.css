@@ -177,6 +177,22 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .side .hint {
   color: var(--brand-navy); font-size: .9rem; font-weight: 700; margin-bottom: .6rem;
 }
+/* small pill toggle beside the edit hint */
+.ghost-btn {
+  background: #fff; color: var(--brand-blue); box-shadow: 0 2px 0 #b9c9e8;
+  border: 1.5px solid #b9c9e8; font-size: .74rem; font-weight: 800;
+  padding: .22rem .6rem; border-radius: 999px; margin-left: .4rem;
+}
+.ghost-btn:hover { filter: none; background: #eef4ff; }
+.ghost-btn.on {
+  background: var(--brand-blue); color: #fff; border-color: var(--brand-navy); box-shadow: 0 2px 0 var(--brand-navy);
+}
+/* pencil cursor: 20x20 svg, hotspot near the tip (bottom-left) */
+.card-page.show-editable [contenteditable] {
+  outline: 2px dashed var(--brand-blue); outline-offset: 2px;
+  background: rgba(255, 203, 5, .18);
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><path d="M3 19l1-4L15 4l3 3L7 18z" fill="%23ffcb05" stroke="%232a75bb" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 6l3 3" stroke="%232a75bb" stroke-width="1.5"/></svg>') 3 19, text;
+}
 .actions { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1rem; }
 .born-from {
   font-size: .82rem; color: #6b7a99; font-style: italic; margin: -.4rem 0 1rem;

@@ -66,10 +66,19 @@ const friendlyDate = iso => {
   return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
 };
 
-// localStorage.trainer holds the current trainer name; trainerAvatar its picture (for the nav chip)
+// localStorage.trainer holds the current trainer NAME (used for createdBy + the "Mine" dex
+// filter, so it stays the name, not the slug); trainerAvatar its picture (for the nav chip).
+// The profile fetch needs the slug - resolved from the trainers list by name at call time,
+// so there is one source of truth and no stale slug to migrate. (Same-name trainers: the
+// first match wins - acceptable for a family app.)
 function becomeTrainer(name, avatar) {
   localStorage.trainer = name;
   if (avatar) localStorage.trainerAvatar = avatar; else localStorage.removeItem('trainerAvatar');
+}
+
+function clearTrainer() {
+  localStorage.removeItem('trainer');
+  localStorage.removeItem('trainerAvatar');
 }
 
 function updateTrainerChip() {
@@ -159,7 +168,7 @@ function viewCreate() {
       </div>
       <div class="create-body">
         ${localStorage.trainer
-          ? `<p class="create-nudge">${localStorage.trainerAvatar ? `<img src="${esc(localStorage.trainerAvatar)}" alt="">` : ''}Playing as <b>${esc(localStorage.trainer)}</b></p>`
+          ? `<p class="create-nudge">${localStorage.trainerAvatar ? `<img src="${esc(localStorage.trainerAvatar)}" alt="">` : ''}Playing as <b>${esc(localStorage.trainer)}</b><a href="#trainers" class="profile-link">profile</a></p>`
           : `<p class="create-nudge none">No trainer picked - <a href="#trainers">choose or make one</a></p>`}
         <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
         <button id="go" class="big">Generate!</button>
@@ -305,13 +314,82 @@ async function viewDex() {
   render('all');
 }
 
+// the top-of-page marquee for the active trainer; p is a full profile (GET /trainers/:slug)
+function marqueeHTML(p) {
+  return `
+    <div class="marquee-avatar">${p.avatar
+      ? `<img src="${esc(p.avatar)}" alt="${esc(p.name)}">`
+      : '<div class="marquee-avatar-none">?</div>'}</div>
+    <div class="marquee-info">
+      <h1 class="display marquee-name">${esc(p.name)}</h1>
+      ${p.region || p.homeGym ? `<div class="marquee-meta">
+        ${p.region ? `<span class="meta-pill"><b>Region</b> ${esc(p.region)}</span>` : ''}
+        ${p.homeGym ? `<span class="meta-pill"><b>Home Gym</b> ${esc(p.homeGym)}</span>` : ''}
+      </div>` : ''}
+      ${p.description ? `<p class="marquee-prompt">Dreamed up as: "${esc(p.description)}"</p>` : ''}
+      ${p.backstory ? `<p class="marquee-backstory">${esc(p.backstory)}</p>` : ''}
+      <div class="marquee-actions">
+        <button id="take-break" class="take-break">Take a break</button>
+        <button id="archive-trainer" class="release">Archive this trainer</button>
+      </div>
+    </div>`;
+}
+
+function noTrainerMarqueeHTML() {
+  return `<div class="marquee-empty">
+    <div class="marquee-avatar-none">?</div>
+    <div>
+      <h1 class="display marquee-name">No trainer picked</h1>
+      <p class="marquee-empty-tip">Tap an avatar below to jump in, or make a brand-new trainer.
+        You can browse and make Pokemon without one too!</p>
+    </div>
+  </div>`;
+}
+
+// Load the active trainer's full profile into the marquee. The GET can be slow (server
+// backfills lore for pre-profile trainers), so show a loading state; degrade gracefully.
+async function loadMarquee(trainers) {
+  const el = $('#trainer-marquee');
+  if (!el) return;
+  const active = localStorage.trainer;
+  const t = active && trainers.find(x => x.name === active);
+  if (!t) { el.innerHTML = noTrainerMarqueeHTML(); el.classList.add('empty'); return; }
+  el.classList.remove('empty');
+  el.innerHTML = `<div class="marquee-loading"><span class="mini-ball"></span>
+    <p>Loading ${esc(t.name)}'s profile...</p></div>`;
+  let p;
+  try { p = await api(`/trainers/${t.slug}`); }
+  catch { p = { ...t }; } // show name + avatar we already have if lore gen fails
+  if (!p.avatar) p.avatar = t.avatar;
+  // guard against a stale load if the user switched trainers mid-fetch
+  if (localStorage.trainer !== t.name) return;
+  el.innerHTML = marqueeHTML(p);
+  const img = el.querySelector('.marquee-avatar img');
+  if (img) img.onclick = () => openLightbox(img.src);
+  $('#take-break').onclick = () => {
+    clearTrainer();
+    updateTrainerChip();
+    document.querySelectorAll('.trainer-card').forEach(c => c.classList.remove('on'));
+    el.innerHTML = noTrainerMarqueeHTML();
+    el.classList.add('empty');
+  };
+  $('#archive-trainer').onclick = async () => {
+    if (!confirm(`Archive ${p.name}? (Dad can rescue them from the archive.)`)) return;
+    await api(`/trainers/${t.slug}/archive`, { method: 'POST' }).catch(e => alert(e.message));
+    if (localStorage.trainer === p.name) { clearTrainer(); updateTrainerChip(); }
+    viewTrainers(); // refresh the grid without the archived trainer
+  };
+}
+
 async function viewTrainers() {
   const trainers = await api('/trainers');
+  const active = localStorage.trainer;
   $('#view').innerHTML = `
-    <h1 class="display">Choose Your Trainer</h1>
+    <section id="trainer-marquee" class="trainer-marquee"></section>
+    <h2 class="display choose-title">Choose Your Trainer</h2>
     <div class="trainer-grid">
       ${trainers.map(t => `
-        <button class="trainer-card" data-name="${esc(t.name)}" data-avatar="${esc(t.avatar || '')}">
+        <button class="trainer-card ${t.name === active ? 'on' : ''}" data-slug="${esc(t.slug)}" data-name="${esc(t.name)}" data-avatar="${esc(t.avatar || '')}">
           <img src="${esc(t.avatar || '')}" alt="${esc(t.name)}">
           <span>${esc(t.name)}</span>
         </button>`).join('') || '<p class="no-trainers">No trainers yet - make the first one!</p>'}
@@ -326,8 +404,14 @@ async function viewTrainers() {
       <button id="t-go" class="big">GO!</button>
     </div>`;
   bindProviderSelect();
+  // selecting an avatar stays on #trainers and loads that trainer into the marquee
   document.querySelectorAll('.trainer-card').forEach(b => {
-    b.onclick = () => { becomeTrainer(b.dataset.name, b.dataset.avatar); location.hash = '#create'; };
+    b.onclick = () => {
+      becomeTrainer(b.dataset.name, b.dataset.avatar);
+      updateTrainerChip();
+      document.querySelectorAll('.trainer-card').forEach(c => c.classList.toggle('on', c === b));
+      loadMarquee(trainers);
+    };
   });
   $('#t-go').onclick = async () => {
     const name = $('#t-name').value.trim();
@@ -335,8 +419,9 @@ async function viewTrainers() {
     if (!name) return;
     const t = await generating(() =>
       api('/trainers', { method: 'POST', body: { name, description, provider: currentProvider() } }));
-    if (t) { becomeTrainer(t.name, t.avatar); location.hash = '#create'; }
+    if (t) { becomeTrainer(t.name, t.avatar); updateTrainerChip(); viewTrainers(); }
   };
+  loadMarquee(trainers);
 }
 
 async function viewPrint() {

@@ -99,13 +99,17 @@ nav a.primary {
   border: 2px solid #fff;
 }
 nav a.primary:hover, nav a.primary:focus-visible { background: var(--poke-red-deep); }
-/* trainer chip sits directly under +New, in the click flow (not a corner) */
+/* trainer chip sits directly under +New, in the click flow (not a corner).
+   No font-size override: the chip text is the same 1.32rem as Pokedex/Print/Help.
+   Lighter vertical padding keeps the box from ballooning now the text is full size. */
 nav a.trainer-chip {
   display: flex; align-items: center; justify-content: center; gap: .45rem;
-  background: rgba(0, 0, 0, .22); padding: .4rem .7rem; border-radius: 14px;
-  font-size: 1.05rem;
+  background: rgba(0, 0, 0, .22); padding: .3rem .7rem; border-radius: 14px;
+  min-width: 0;
 }
+nav a.trainer-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 nav a.trainer-chip img {
+  flex: 0 0 auto;
   width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
   background: #fff; border: 2px solid #fff; display: block;
 }
@@ -199,6 +203,11 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 }
 .create-nudge.none { color: #5a6a88; font-style: italic; }
 .create-nudge.none a { color: var(--brand-blue); font-weight: 800; }
+/* small link beside "Playing as X" to jump to the trainer profile */
+.create-nudge .profile-link {
+  font-size: .8rem; font-weight: 800; color: var(--brand-blue);
+  text-decoration: underline; margin-left: .1rem;
+}
 .create-body textarea { font-size: 1.15rem; margin-bottom: 1.1rem; min-height: 96px; }
 .create-body .big { animation: pop .5s .12s var(--ease) both; }
 
@@ -404,6 +413,61 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 }
 
 /* trainers view */
+
+/* marquee: the active trainer's profile hero at the top of #trainers */
+.trainer-marquee {
+  display: flex; gap: 1.6rem; align-items: flex-start; flex-wrap: wrap;
+  background: #fff; border: 4px solid #fff; border-radius: 22px;
+  padding: 1.4rem 1.6rem; margin-bottom: 1.8rem;
+  box-shadow: 0 6px 0 rgba(30, 42, 74, .14), 0 12px 26px rgba(30, 42, 74, .16);
+}
+.marquee-avatar {
+  flex: 0 0 auto; width: 220px; max-width: 42vw;
+  border: 5px solid var(--brand-yellow); border-radius: 18px; overflow: hidden;
+  background: #eef4ff; box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+}
+.marquee-avatar img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; display: block; cursor: zoom-in;
+}
+.marquee-avatar-none {
+  width: 120px; height: 120px; flex: 0 0 auto; border-radius: 18px;
+  background: #eef4ff; border: 4px dashed #b9c9e8; color: #9fb0d0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.4rem; font-weight: 900; font-family: "PokeDisplay", var(--font-display);
+}
+.marquee-info { flex: 1; min-width: 260px; max-width: 620px; }
+.marquee-name { font-size: 2.3rem; margin: 0 0 .55rem; }
+.marquee-meta { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: .8rem; }
+.meta-pill {
+  background: var(--brand-blue); color: #fff; font-weight: 700; font-size: .84rem;
+  padding: .32rem .85rem; border-radius: 999px;
+  box-shadow: 0 2px 0 var(--brand-navy);
+}
+.meta-pill b { opacity: .72; font-weight: 800; margin-right: .35rem; text-transform: uppercase; font-size: .72rem; letter-spacing: .3px; }
+.marquee-prompt { font-style: italic; color: #566a8c; font-size: .95rem; margin: 0 0 .8rem; }
+.marquee-backstory { color: var(--ink); line-height: 1.5; max-width: 75ch; margin: 0 0 1.1rem; }
+.marquee-actions { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
+/* sign-out style: quiet but clearly a real button, distinct from the archive affordance */
+.take-break {
+  background: #fff; color: var(--brand-blue); border: 2px solid var(--brand-blue);
+  box-shadow: 0 3px 0 #b9c9e8; font-weight: 800;
+}
+.take-break:hover { filter: none; background: #eef4ff; }
+/* .release (archive) reuses the pokemon "Release into the wild" style; kill its top margin here */
+.marquee-actions .release { margin-top: 0; }
+.marquee-empty { display: flex; gap: 1.3rem; align-items: center; }
+.marquee-empty .marquee-name { font-size: 1.9rem; margin-bottom: .3rem; }
+.marquee-empty-tip { color: #566a8c; margin: 0; max-width: 60ch; line-height: 1.45; }
+.marquee-loading { display: flex; align-items: center; gap: 1rem; color: var(--brand-navy); font-weight: 800; }
+.mini-ball {
+  width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+  background: linear-gradient(#ee1515 46%, #222 46%, #222 54%, #f4f4f4 54%);
+  border: 2px solid #222; animation: spin 1s linear infinite;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}
+/* demoted from h1 now the marquee is the page hero */
+.choose-title { font-size: 1.5rem; margin: 0 0 .2rem; }
+
 .trainer-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 1rem; margin: 1rem 0 1.6rem;
@@ -417,6 +481,11 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 }
 .trainer-card:hover { transform: translateY(-4px) rotate(-1deg); filter: none; }
 .trainer-card:active { transform: translateY(0); box-shadow: 0 2px 0 rgba(30, 42, 74, .16); }
+/* the currently active trainer is ringed so the grid shows who's picked */
+.trainer-card.on {
+  border-color: var(--brand-yellow);
+  box-shadow: 0 0 0 3px var(--brand-yellow), 0 4px 0 rgba(30, 42, 74, .16), 0 6px 14px rgba(30, 42, 74, .12);
+}
 .trainer-card img {
   width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: #eef4ff;
 }

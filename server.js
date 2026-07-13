@@ -143,11 +143,11 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   const { provider = DEFAULT_PROVIDER, instruction } = req.body;
   const record = store.get(req.params.id);
   const prev = record.stages[record.stages.length - 1];
-  const { artPrompt, ...stageData } = await text.evolvedStage(record);
-  const p = getProvider(provider);
-  // ponytail: image-level steering only. Concept-level (text model) steering would need
-  // evolvedStage(record, guidance) in lib/text.js, which is out of this change's scope.
   const guidance = (instruction || '').trim();
+  // Steering applies at both levels: the text model shapes the evolution concept
+  // (name, category, stats) and the image prompt shapes the art.
+  const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined);
+  const p = getProvider(provider);
   const prompt = `${withContinuity(provider,
     `Evolve this creature. Its evolved form: ${artPrompt}
 Same species, same color palette, same art style, clearly a bigger more powerful evolution.

@@ -350,3 +350,21 @@ test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
     global.fetch = realFetch;
   }
 });
+
+test('text: evolvedStage passes kid guidance into the concept prompt', async () => {
+  const { evolvedStage } = require('../lib/text');
+  const realFetch = global.fetch;
+  let captured;
+  const stage = { name: 'x', category: 'c', types: ['Fire'], hp: 90, flavor: 'f',
+    moves: [{ name: 'm', damage: 30, text: 't' }], artPrompt: 'a', description: 'd' };
+  global.fetch = async (url, opts) => {
+    captured = JSON.parse(opts.body).contents[0].parts[0].text;
+    return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };
+  };
+  try {
+    await evolvedStage({ backstory: 'b', stages: [{ name: 'S', category: 'c', types: ['Normal'], hp: 70, description: 'sock' }] }, 'make it a dragon');
+    assert.match(captured, /The kid wants the evolution to be: make it a dragon/);
+    await evolvedStage({ backstory: 'b', stages: [{ name: 'S', category: 'c', types: ['Normal'], hp: 70, description: 'sock' }] });
+    assert.doesNotMatch(captured, /The kid wants/);
+  } finally { global.fetch = realFetch; }
+});

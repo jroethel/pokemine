@@ -80,6 +80,33 @@ nav .brand {
   box-shadow: 0 3px 0 var(--brand-navy); line-height: 0;
 }
 nav .brand img { height: 30px; width: auto; display: block; }
+
+/* POW starburst brand: on every view except create, the small white brand box becomes a
+   big comic starburst hanging below the nav's left end, wordmark inside, bar shooting out right.
+   Two stacked clip-path stars (red outer, yellow inner) + a white drop-shadow rim for the gap. */
+body:not([data-view="create"]) nav { padding-left: 164px; }
+body:not([data-view="create"]) nav .brand {
+  position: absolute; left: 12px; top: -3px; z-index: 2;
+  width: 140px; height: 140px; padding: 0; border-radius: 0;
+  background: var(--poke-red-deep); box-shadow: none; line-height: normal;
+  clip-path: polygon(50% 0%, 58% 25.3%, 79.4% 9.5%, 71% 34.7%, 97.6% 34.5%, 76% 50%, 97.6% 65.5%,
+    71% 65.3%, 79.4% 90.5%, 58% 74.7%, 50% 100%, 42% 74.7%, 20.6% 90.5%, 29% 65.3%, 2.4% 65.5%,
+    24% 50%, 2.4% 34.5%, 29% 34.7%, 20.6% 9.5%, 42% 25.3%);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35));
+  display: flex; align-items: center; justify-content: center;
+}
+/* inner yellow star: nested same orientation, slight 5deg rotation; white drop-shadow = the gap */
+body:not([data-view="create"]) nav .brand::before {
+  content: ""; position: absolute; inset: 0; background: var(--brand-yellow);
+  clip-path: polygon(53.7% 7.2%, 59% 28.8%, 78.2% 17.5%, 69.7% 38.2%, 91.9% 40.3%, 72.9% 52%,
+    89.6% 66.8%, 67.4% 65.1%, 72.1% 86.9%, 55.2% 72.4%, 46.3% 92.8%, 41% 71.2%, 21.8% 82.5%,
+    30.3% 61.8%, 8.1% 59.7%, 27.1% 48%, 10.4% 33.2%, 32.6% 34.9%, 27.9% 13.1%, 44.8% 27.6%);
+  filter: drop-shadow(0 0 2.5px #fff) drop-shadow(0 0 1.5px #fff);
+}
+body:not([data-view="create"]) nav .brand img {
+  position: relative; z-index: 1; width: 82px; height: auto;
+  background: none; padding: 0; border-radius: 4px;
+}
 nav .cost {
   margin-left: auto; color: #eaf1fd; font-size: .82rem; font-weight: 700;
   background: rgba(0, 0, 0, .16); padding: .25rem .6rem; border-radius: 999px;

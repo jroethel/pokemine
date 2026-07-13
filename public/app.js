@@ -340,11 +340,15 @@ function marqueeHTML(p) {
         ${p.region ? `<span class="meta-pill"><b>Region</b> ${esc(p.region)}</span>` : ''}
         ${p.homeGym ? `<span class="meta-pill"><b>Home Gym</b> ${esc(p.homeGym)}</span>` : ''}
       </div>` : ''}
-      ${p.description ? `<p class="marquee-prompt">Dreamed up as: "${esc(p.description)}"</p>` : ''}
+      ${p.favoritePokemon || p.finishingMove ? `<div class="marquee-meta">
+        ${p.favoritePokemon ? `<span class="meta-pill"><b>Favorite Pokemon</b> ${esc(p.favoritePokemon)}</span>` : ''}
+        ${p.finishingMove ? `<span class="meta-pill"><b>Finishing Move</b> ${esc(p.finishingMove)}</span>` : ''}
+      </div>` : ''}
       ${p.backstory ? `<p class="marquee-backstory">${esc(p.backstory)}</p>` : ''}
+      ${p.description ? `<p class="marquee-prompt">Dreamed up as: "${esc(p.description)}"</p>` : ''}
       <div class="marquee-actions">
         <button id="take-break" class="take-break">Take a break</button>
-        <button id="archive-trainer" class="release">Archive this trainer</button>
+        <button id="archive-trainer" class="release">Join Team Rocket</button>
       </div>
     </div>`;
 }
@@ -388,7 +392,7 @@ async function loadMarquee(trainers) {
     el.classList.add('empty');
   };
   $('#archive-trainer').onclick = async () => {
-    if (!confirm(`Archive ${p.name}? (Dad can rescue them from the archive.)`)) return;
+    if (!confirm(`Send ${p.name} off to Team Rocket? (Dad can always rescue them back.)`)) return;
     await api(`/trainers/${t.slug}/archive`, { method: 'POST' }).catch(e => alert(e.message));
     if (localStorage.trainer === p.name) { clearTrainer(); updateTrainerChip(); }
     viewTrainers(); // refresh the grid without the archived trainer

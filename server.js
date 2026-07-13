@@ -149,7 +149,9 @@ app.post('/api/trainers', wrap(async (req, res) => {
 
 app.get('/api/trainers/:slug', wrap(async (req, res) => {
   let t = store.trainerGet(req.params.slug);
-  if (!t.backstory) { // trainers made before profiles existed: backfill once, persist
+  // Backfill once and persist: covers trainers made before profiles existed AND
+  // profiles from before favorite Pokemon / finishing move were added.
+  if (!t.backstory || !t.finishingMove) {
     try {
       const lore = await text.trainerBackstory(t);
       t = store.trainerSave(t.slug, { ...t, ...lore });

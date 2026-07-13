@@ -295,7 +295,8 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
     if (String(url).includes('generativelanguage')) {
       const asked = JSON.parse(opts.body).contents[0].parts[0].text;
       const payload = asked.includes('A Pokemon trainer named')
-        ? { region: 'Kanto', homeGym: 'Pewter City Rock Gym', backstory: 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.' }
+        ? { region: 'Kanto', homeGym: 'Pewter City Rock Gym', backstory: 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.',
+            favoritePokemon: 'Snorlax', finishingMove: 'Pulverizing Pancake (Normal, 210)' }
         : { stage: { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
             flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' }, backstory: 'b' };
       return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
@@ -324,6 +325,8 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
     const one = (await call(`/api/trainers/${r.body.slug}`)).body;
     assert.equal(one.backstory, 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.');
     assert.equal(one.avatar, r.body.avatar);
+    assert.equal(one.favoritePokemon, 'Snorlax');
+    assert.match(one.finishingMove, /Pulverizing Pancake/);
 
     // a pre-profile trainer (no lore on disk) gets backfilled once on GET, then persisted
     const legacy = store.trainerCreate({ name: 'Old Timer', description: 'vintage cap' });

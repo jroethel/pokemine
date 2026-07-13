@@ -211,6 +211,8 @@ async function viewCard(id, stageIdx) {
         <div class="side">
           <div class="hint">Tap the card text to edit it!
             <button id="toggle-editable" class="ghost-btn no-print">Highlight editable</button></div>
+          <details class="backstory" open><summary>Backstory</summary>
+            <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
           <div class="actions idea-box">
             <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
             <input id="alter-text" placeholder="give it a hat... make it angry... turn it into a dragon...">
@@ -225,8 +227,6 @@ async function viewCard(id, stageIdx) {
           ${rec.stages[0].prompt ? `<div class="born-from">Born from: "${esc(rec.stages[0].prompt)}"
             <button id="use-origin" class="link-btn">use it</button></div>` : ''}
           ${rec.createdBy ? `<div class="born-from byline">by ${esc(rec.createdBy)} on ${friendlyDate(rec.createdAt)}</div>` : ''}
-          <details class="backstory" open><summary>Backstory</summary>
-            <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
           <button id="release" class="release no-print">Release into the wild</button>
         </div>
       </div>

@@ -295,13 +295,15 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   box-shadow: 0 2px 10px rgba(30, 42, 74, .1);
 }
 .backstory summary { font-weight: 800; color: var(--brand-navy); cursor: pointer; }
-/* quiet, kept far from EVOLVE so it isn't hit by accident */
+/* Team Rocket red with a yellow ring: destructive-but-fun, kept far from EVOLVE
+   so it isn't hit by accident (also styles "Join Team Rocket" on #trainers) */
 .release {
-  margin-top: 1.4rem; background: none; color: #8a97b0; box-shadow: none;
-  border: 1.5px solid #cdd6e8; font-size: .8rem; font-weight: 700; padding: .35rem .8rem;
+  margin-top: 1.4rem; background: var(--poke-red); color: #fff;
+  box-shadow: 0 3px 0 var(--poke-red-deep);
+  border: 2px solid var(--brand-yellow); font-size: .8rem; font-weight: 800; padding: .4rem .9rem;
 }
-.release:hover { filter: none; color: #c22; border-color: #e6b3b3; background: #fff5f5; }
-.release:active { transform: none; }
+.release:hover { filter: brightness(1.1); }
+.release:active { transform: translateY(2px); box-shadow: none; }
 .stage-tabs { margin-bottom: .8rem; display: flex; gap: .5rem; flex-wrap: wrap; }
 .tab {
   background: #fff; color: var(--brand-navy); border-radius: 999px;
@@ -686,3 +688,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .idea-buttons { display: flex; gap: 0.6rem; }
 .idea-buttons #alter { flex: 1; }
 .idea-buttons #evolve { flex: 2; }
+/* Redraw and EVOLVE! share the menu-bar display face at one size; EVOLVE keeps
+   its yellow .big treatment but no longer towers over Redraw */
+.idea-buttons button {
+  font-family: "PokeDisplay", var(--font-display);
+  font-size: 1.05rem; letter-spacing: .5px; padding: .55rem 1.1rem;
+}

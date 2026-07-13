@@ -3,8 +3,6 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 let config = { providers: [], default: 'gemini' };
-const session = { images: 0, cost: 0 };
-const COST = { gemini: 0.034 };
 const LOADING_MSGS = [
   'Catching wild pixels...', 'Shaking the Pokeball...', 'Professor Oak is sketching...',
   'Mixing up silly DNA...', 'Teaching it its first move...', 'Almost hatched...',
@@ -37,14 +35,22 @@ function hideLoading() {
   clearInterval(msgTimer);
 }
 
-// wraps an image-generating action with loading UI + cost tracking
+// server-tracked cost badge: "<session images> pics ~ $<session cost> | all-time $<total>"
+function updateCostBadge() {
+  const c = config.cost;
+  if (!c) return;
+  $('#cost').textContent = c.session.images
+    ? `${c.session.images} pics ~ $${c.session.cost.toFixed(2)} | all-time $${c.total.cost.toFixed(2)}`
+    : `all-time $${c.total.cost.toFixed(2)}`;
+}
+
+// wraps an image-generating action with loading UI; cost is tracked server-side
 async function generating(fn) {
   showLoading();
   try {
     const result = await fn();
-    session.images++;
-    session.cost += COST[currentProvider()] || 0;
-    $('#cost').textContent = `${session.images} pics ~ $${session.cost.toFixed(2)}`;
+    config = await api('/config').catch(() => config);
+    updateCostBadge();
     return result;
   } catch (e) {
     alert(e.message);
@@ -269,6 +275,7 @@ async function viewPrint() {
 
 async function route() {
   try { config = await api('/config'); } catch { /* keep last-known config */ }
+  updateCostBadge();
   const [view, id, extra] = location.hash.slice(1).split('/');
   try {
     if (view === 'card' && id) return await viewCard(id, extra === undefined ? undefined : +extra);

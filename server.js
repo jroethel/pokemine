@@ -12,6 +12,33 @@ const DEFAULT_PROVIDER = process.env.DEFAULT_IMAGE_PROVIDER || 'gemini';
 
 store.init(DATA_DIR);
 
+// Cost tracking: in-memory session (resets on restart, ~ "today's play session")
+// plus a persistent all-time ledger at <DATA_DIR>/costs.json.
+const COST = { gemini: 0.034, zai: 0.014, bridge: 0, mock: 0, local: 0 }; // zai is an estimate
+const costsPath = path.resolve(DATA_DIR, 'costs.json');
+const session = { images: 0, cost: 0 };
+
+function readLedger() {
+  try {
+    const l = JSON.parse(fs.readFileSync(costsPath, 'utf8'));
+    return { images: l.images || 0, cost: l.cost || 0, byProvider: l.byProvider || {} };
+  } catch (e) {
+    if (e.code !== 'ENOENT') console.warn(`costs.json unreadable (${e.message}), starting fresh`);
+    return { images: 0, cost: 0, byProvider: {} };
+  }
+}
+
+function logCost(provider) {
+  const amt = COST[provider] || 0;
+  session.images++;
+  session.cost += amt;
+  const ledger = readLedger();
+  ledger.images++;
+  ledger.cost += amt;
+  ledger.byProvider[provider] = (ledger.byProvider[provider] || 0) + 1;
+  fs.writeFileSync(costsPath, JSON.stringify(ledger, null, 2));
+}
+
 const app = express();
 app.use(express.json({ limit: '8mb' })); // bridge result payloads carry ~1-2MB base64 images
 app.use(express.static(path.join(__dirname, 'public')));
@@ -79,10 +106,15 @@ app.post('/api/bridge/ping', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
+  const ledger = readLedger();
   res.json({
     providers: listProviders(),
     default: DEFAULT_PROVIDER,
     bridge: { driverConnected: Date.now() - bridge.lastSeen < 15000, lastSeen: bridge.lastSeen || null },
+    cost: {
+      session: { images: session.images, cost: session.cost },
+      total: { images: ledger.images, cost: ledger.cost },
+    },
   });
 });
 
@@ -97,6 +129,7 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   const art = await getProvider(provider).generate({
     prompt: withContinuity(provider, artPrompt, ''),
   });
+  logCost(provider);
   const record = store.create({
     backstory,
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
@@ -124,6 +157,7 @@ The evolved form should look sturdier or sharper than before, same palette, keep
     ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
     : undefined;
   const art = await p.generate({ prompt, reference });
+  logCost(provider);
   const n = record.stages.length + 1;
   record.stages.push({
     ...stageData, prompt: 'evolved',
@@ -153,6 +187,7 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   const composed = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
   const prompt = `${composed}\n${NO_TEXT}`;
   const art = await p.generate({ prompt, reference });
+  logCost(provider);
   store.backupArt(record.id, stage.art);
   stage.art = store.saveArt(record.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);
   // ponytail: naive continuity note; regenerate description via vision call if drift ever matters

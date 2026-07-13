@@ -269,6 +269,42 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
   }
 });
 
+test('api: cost ledger tracks session and persists all-time', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const payload = { stage: { name: 'Penny', category: 'The Coin Pokemon', types: ['Steel'], hp: 40,
+        flavor: 'f', moves: [{ name: 'Spend', damage: 10, text: 't' }], artPrompt: 'a', description: 'd' },
+        backstory: 'minted' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
+    method, headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(async r => ({ status: r.status, body: await r.json() }));
+
+  try {
+    // delta-based: the server process is shared across tests, so measure the change
+    const before = (await call('/api/config')).body.cost;
+    await call('/api/pokemon', 'POST', { prompt: 'a coin pokemon', provider: 'mock' });
+    await call('/api/pokemon', 'POST', { prompt: 'another coin', provider: 'mock' });
+    const after = (await call('/api/config')).body.cost;
+    assert.equal(after.session.images - before.session.images, 2);
+    assert.equal(after.session.cost - before.session.cost, 0); // mock is free
+    const ledger = JSON.parse(fs.readFileSync(path.join(process.env.DATA_DIR, 'costs.json'), 'utf8'));
+    assert.ok(ledger.images >= 2);
+    assert.equal(ledger.images, after.total.images);
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+  }
+});
+
 test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
   process.env.BRIDGE_POLL_MS = '40';
   const realFetch = global.fetch;

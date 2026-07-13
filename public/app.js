@@ -61,8 +61,12 @@ function currentProvider() {
   return localStorage.provider || config.default;
 }
 
+// Client-side label overrides. zai is off until the account has balance; flip back when funded.
+const PROVIDER_LABELS = { zai: 'zai (off)' };
+
 function providerLabel(p) {
   if (p.name === 'bridge') return config.bridge?.driverConnected ? 'bridge' : 'bridge (driver offline)';
+  if (PROVIDER_LABELS[p.name]) return PROVIDER_LABELS[p.name];
   return `${p.name}${p.real ? '' : ' (soon)'}`;
 }
 

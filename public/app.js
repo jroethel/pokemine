@@ -369,9 +369,7 @@ async function route() {
   updateCostBadge();
   const [view, id, extra] = location.hash.slice(1).split('/');
   document.body.dataset.view = view || 'create';
-  // burst brand on every view except the landing/create view (which keeps the plain wordmark)
-  const brandImg = document.querySelector('nav .brand img');
-  if (brandImg) brandImg.src = (view && view !== 'create') ? 'logo-burst.png' : 'logo.jpg';
+  // nav brand is always the burst logo (set in index.html); no per-view swap
   updateTrainerChip();
   try {
     if (view === 'trainers') return await viewTrainers();

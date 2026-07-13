@@ -172,7 +172,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 
 /* card */
 .card-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
-.side { flex: 1; min-width: 260px; }
+/* 230 (not 260) so the 2x card + gap + side fit inside main's content box at 1366; wraps below */
+.side { flex: 1; min-width: 230px; }
 .side .hint {
   color: var(--brand-navy); font-size: .9rem; font-weight: 700; margin-bottom: .6rem;
 }
@@ -212,6 +213,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   padding: 8px 11px; display: flex; flex-direction: column;
   box-shadow: 0 6px 16px rgba(0, 0, 0, .18); font-size: 13px;
 }
+/* Card view shows the card at double size for easy reading/editing; print stays 63x88mm.
+   Internals are em-based off the root font-size, so doubling width + font-size scales the whole card.
+   Screen-only so a Ctrl+P from the card view never overrides the print size rule. */
+@media screen {
+  .card-page .card { width: 660px; font-size: 26px; }
+}
+
 .card-head { display: flex; align-items: baseline; gap: .5rem; }
 .card-name { font-weight: 800; font-size: 1.15em; flex: 1; }
 .card-hp { font-weight: 800; color: #c22; white-space: nowrap; }

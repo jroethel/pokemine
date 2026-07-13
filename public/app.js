@@ -61,6 +61,27 @@ function currentProvider() {
   return localStorage.provider || config.default;
 }
 
+const friendlyDate = iso => {
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
+// localStorage.trainer holds the current trainer name; trainerAvatar its picture (for the nav chip)
+function becomeTrainer(name, avatar) {
+  localStorage.trainer = name;
+  if (avatar) localStorage.trainerAvatar = avatar; else localStorage.removeItem('trainerAvatar');
+}
+
+function updateTrainerChip() {
+  const chip = $('#trainer-chip');
+  if (!chip) return;
+  const name = localStorage.trainer;
+  chip.classList.remove('hidden');
+  chip.innerHTML = name
+    ? `${localStorage.trainerAvatar ? `<img src="${localStorage.trainerAvatar}" alt="">` : ''}<span>${esc(name)}</span>`
+    : '<span>Choose trainer</span>';
+}
+
 // Client-side label overrides. zai is off until the account has balance; flip back when funded.
 const PROVIDER_LABELS = { zai: 'zai (off)' };
 
@@ -150,7 +171,7 @@ function viewCreate() {
     const prompt = $('#prompt').value;
     if (!prompt.trim()) return;
     const rec = await generating(() =>
-      api('/pokemon', { method: 'POST', body: { prompt, provider: currentProvider() } }));
+      api('/pokemon', { method: 'POST', body: { prompt, provider: currentProvider(), trainer: localStorage.trainer } }));
     if (rec) location.hash = `#card/${rec.id}`;
   };
 }
@@ -179,6 +200,7 @@ async function viewCard(id, stageIdx) {
           </div>
           ${rec.stages[0].prompt ? `<div class="born-from">Born from: "${esc(rec.stages[0].prompt)}"
             <button id="use-origin" class="link-btn">use it</button></div>` : ''}
+          ${rec.createdBy ? `<div class="born-from byline">by ${esc(rec.createdBy)} on ${friendlyDate(rec.createdAt)}</div>` : ''}
           <details class="backstory" open><summary>Backstory</summary>
             <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
           <button id="release" class="release no-print">Release into the wild</button>
@@ -253,15 +275,66 @@ async function viewCard(id, stageIdx) {
 
 async function viewDex() {
   const all = await api('/pokemon');
+  const me = localStorage.trainer;
+  // your Pokemon first, then other trainers', then legacy records with no owner
+  const rank = r => (r.createdBy === me ? 0 : r.createdBy ? 1 : 2);
+  const sorted = [...all].sort((a, b) => rank(a) - rank(b) || a.number - b.number);
+  const tile = rec => {
+    const s = rec.stages[rec.stages.length - 1];
+    return `<a class="dex-item" href="#card/${rec.id}">
+      <img src="/media/${rec.id}/${s.art}" alt="${esc(s.name)}">
+      <div>#${String(rec.number).padStart(3, '0')} ${esc(s.name)}</div>
+    </a>`;
+  };
+  const render = filter => {
+    const list = filter === 'mine' ? sorted.filter(r => r.createdBy === me) : sorted;
+    $('#dex-grid').innerHTML = list.map(tile).join('')
+      || (filter === 'mine' ? '<p>None of these are yours yet. Go make one!</p>' : '<p>No Pokemon yet. Go make one!</p>');
+    document.querySelectorAll('.dex-chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
+  };
   $('#view').innerHTML = `
     <h1 class="display">Your Pokedex (${all.length})</h1>
-    <div class="dex">${all.map(rec => {
-      const s = rec.stages[rec.stages.length - 1];
-      return `<a class="dex-item" href="#card/${rec.id}">
-        <img src="/media/${rec.id}/${s.art}" alt="${esc(s.name)}">
-        <div>#${String(rec.number).padStart(3, '0')} ${esc(s.name)}</div>
-      </a>`;
-    }).join('') || '<p>No Pokemon yet. Go make one!</p>'}</div>`;
+    <div class="dex-filters no-print">
+      <button class="dex-chip on" data-f="all">All</button>
+      <button class="dex-chip" data-f="mine">Mine</button>
+    </div>
+    <div id="dex-grid" class="dex"></div>`;
+  document.querySelectorAll('.dex-chip').forEach(c => { c.onclick = () => render(c.dataset.f); });
+  render('all');
+}
+
+async function viewTrainers() {
+  const trainers = await api('/trainers');
+  $('#view').innerHTML = `
+    <h1 class="display">Choose Your Trainer</h1>
+    <div class="trainer-grid">
+      ${trainers.map(t => `
+        <button class="trainer-card" data-name="${esc(t.name)}" data-avatar="${esc(t.avatar || '')}">
+          <img src="${esc(t.avatar || '')}" alt="${esc(t.name)}">
+          <span>${esc(t.name)}</span>
+        </button>`).join('') || '<p class="no-trainers">No trainers yet - make the first one!</p>'}
+    </div>
+    <div class="new-trainer idea-box">
+      <h2 class="display new-trainer-title">New Trainer</h2>
+      <label class="idea-label" for="t-name">Trainer name</label>
+      <input id="t-name" placeholder="Ash, Ellie, Captain Sock...">
+      <label class="idea-label" for="t-desc">Describe your trainer (for the avatar)</label>
+      <input id="t-desc" placeholder="a kid with a red cap, goggles, and a big grin...">
+      ${providerSelect()}
+      <button id="t-go" class="big">GO!</button>
+    </div>`;
+  bindProviderSelect();
+  document.querySelectorAll('.trainer-card').forEach(b => {
+    b.onclick = () => { becomeTrainer(b.dataset.name, b.dataset.avatar); location.hash = '#create'; };
+  });
+  $('#t-go').onclick = async () => {
+    const name = $('#t-name').value.trim();
+    const description = $('#t-desc').value.trim();
+    if (!name) return;
+    const t = await generating(() =>
+      api('/trainers', { method: 'POST', body: { name, description, provider: currentProvider() } }));
+    if (t) { becomeTrainer(t.name, t.avatar); location.hash = '#create'; }
+  };
 }
 
 async function viewPrint() {
@@ -294,7 +367,11 @@ async function route() {
   updateCostBadge();
   const [view, id, extra] = location.hash.slice(1).split('/');
   document.body.dataset.view = view || 'create';
+  // must pick a trainer before doing anything else (help.html is a separate page, unaffected)
+  if (!localStorage.trainer && view !== 'trainers') { location.hash = '#trainers'; return; }
+  updateTrainerChip();
   try {
+    if (view === 'trainers') return await viewTrainers();
     if (view === 'card' && id) return await viewCard(id, extra === undefined ? undefined : +extra);
     if (view === 'dex') return await viewDex();
     if (view === 'print') return await viewPrint();

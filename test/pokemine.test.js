@@ -42,6 +42,18 @@ test('store: archive moves a pokemon out of list into a hidden archive folder', 
   assert.ok(fs.existsSync(path.join(store.root(), '..', 'archive', rec.id, 'pokemon.json')));
 });
 
+test('store: trainer create/list/avatar round trip', () => {
+  const t = store.trainerCreate({ name: 'Ellie Ketchum', description: 'red cap' });
+  assert.match(t.slug, /^ellie-ketchum/);
+  assert.ok(t.createdAt);
+  store.trainerSaveAvatar(t.slug, 'avatar.png', Buffer.from('IMG'));
+  const found = store.trainersList().find(x => x.slug === t.slug);
+  assert.equal(found.name, 'Ellie Ketchum');
+  assert.equal(found.description, 'red cap');
+  assert.equal(found.avatar, 'avatar.png');
+  assert.ok(fs.existsSync(path.join(store.trainersRoot(), t.slug, 'trainer.json')));
+});
+
 const { getProvider, withContinuity, listProviders, extFor } = require('../lib/providers');
 
 test('providers: mock generates, stubs throw, unknown throws', async () => {
@@ -266,6 +278,51 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     srv.close();
     global.fetch = realFetch;
     mock.generate = realGen;
+  }
+});
+
+test('api: trainers create profile+avatar (mock), pokemon store createdBy', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const stage = { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
+        flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ stage, backstory: 'b' }) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
+    method, headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(async r => ({ status: r.status, body: await r.json() }));
+
+  try {
+    // POST /api/trainers with mock provider -> profile JSON + avatar image file on disk
+    let r = await call('/api/trainers', 'POST', { name: 'Max Power', description: 'blue hoodie', provider: 'mock' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.name, 'Max Power');
+    assert.match(r.body.avatar, /^\/avatars\/max-power\/avatar\.png$/);
+    assert.ok(fs.existsSync(path.join(process.env.DATA_DIR, 'trainers', r.body.slug, 'avatar.png')));
+
+    // shows up in the listing with an avatar url
+    const list = (await call('/api/trainers')).body;
+    assert.ok(list.some(t => t.slug === r.body.slug && t.avatar === r.body.avatar));
+
+    // blank name is rejected
+    assert.equal((await call('/api/trainers', 'POST', { name: '', provider: 'mock' })).status, 400);
+
+    // creating a pokemon with a trainer records createdBy; without one leaves it unset
+    r = await call('/api/pokemon', 'POST', { prompt: 'a thing', provider: 'mock', trainer: 'Max Power' });
+    assert.equal(r.body.createdBy, 'Max Power');
+    assert.equal(store.get(r.body.id).createdBy, 'Max Power');
+    r = await call('/api/pokemon', 'POST', { prompt: 'orphan', provider: 'mock' });
+    assert.equal(r.body.createdBy, undefined);
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
   }
 });
 

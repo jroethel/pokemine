@@ -47,6 +47,7 @@ const app = express();
 app.use(express.json({ limit: '8mb' })); // bridge result payloads carry ~1-2MB base64 images
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static(store.root()));
+app.use('/avatars', express.static(store.trainersRoot()));
 
 // CORS + Private Network Access on the bridge endpoints, so page-context drivers
 // (a script running on gemini.google.com, not just the extension service worker)
@@ -123,11 +124,28 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+const avatarUrl = t => (t.avatar ? `/avatars/${t.slug}/${t.avatar}` : null);
+
+app.get('/api/trainers', (req, res) =>
+  res.json(store.trainersList().map(t => ({ slug: t.slug, name: t.name, avatar: avatarUrl(t), createdAt: t.createdAt }))));
+
+app.post('/api/trainers', wrap(async (req, res) => {
+  const { name, description = '', provider = DEFAULT_PROVIDER } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Type a trainer name first!' });
+  const profile = store.trainerCreate({ name: name.trim(), description: description.trim() });
+  const art = await getProvider(provider).generate({
+    prompt: `Pokemon trainer portrait: ${description.trim()}. Friendly bust portrait, cel-shaded Ken Sugimori watercolor style, plain white background. Do not write any text, letters, numbers, logos, or watermarks in the image.`,
+  });
+  logCost(provider);
+  const avatar = store.trainerSaveAvatar(profile.slug, `avatar.${extFor(art.mime)}`, art.data);
+  res.json({ slug: profile.slug, name: profile.name, avatar: `/avatars/${profile.slug}/${avatar}`, createdAt: profile.createdAt });
+}));
+
 app.get('/api/pokemon', (req, res) => res.json(store.list()));
 app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
 
 app.post('/api/pokemon', wrap(async (req, res) => {
-  const { prompt, provider = DEFAULT_PROVIDER } = req.body;
+  const { prompt, provider = DEFAULT_PROVIDER, trainer } = req.body;
   if (!prompt || !prompt.trim()) return res.status(400).json({ error: 'Type an idea first!' });
   const { stage, backstory } = await text.newPokemon(prompt.trim());
   const { artPrompt, ...stageData } = stage;
@@ -136,6 +154,7 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   });
   logCost(provider);
   const record = store.create({
+    ...(trainer ? { createdBy: trainer } : {}),
     backstory,
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
   });

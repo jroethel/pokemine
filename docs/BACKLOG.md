@@ -25,6 +25,19 @@ On screen the `#print` grid lets card heights vary with content; actual print ou
 Make the screen view mirror the printed uniformity.
 (Also recorded in `reference/design-principles.md` under process rules.)
 
+## Random special variant at final evolution (added 2026-07-13)
+
+When a Pokemine reaches its final stage (Stage 2), a random roll can crown it something special: EX, DX, Mega, Shiny, etc.
+Server-side roll at evolve time (so it can't be rerolled by reloading), stored on the stage record (e.g. `variant: "EX"`).
+The EX frame tier CSS already exists and is keyed off stage - a variant would upgrade the treatment further (name suffix on the card, louder foil, maybe an HP/damage bump so it feels earned).
+Tuning thought: rare enough to be a shriek-out-loud moment, common enough that each kid hits one within a week or two of play (~1 in 8?).
+
+## Video of a Pokemine using a move (added 2026-07-13)
+
+Generate a short VIDEO clip of the creature performing one of its card moves.
+Probably browser-bridge only: consumer Gemini (AI Pro) includes Veo video generation in the web app at no marginal cost, while API video would be expensive.
+The bridge extension driver would need a video job type: submit prompt (creature description + move name/effect), wait for the <video> element instead of <single-image>, capture/download the clip, store next to the stage art and show it on the card page (tap the art to play?).
+
 ## Pokedex-book view (added 2026-07-12)
 
 A "his own Pokedex" rendering mode styled after the Scholastic handbook spreads in `resources/pokebook/`.

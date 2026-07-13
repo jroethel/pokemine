@@ -294,6 +294,10 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 @media screen {
   .card-page .card { width: 660px; font-size: 26px; }
 }
+/* Short viewports (kids' 1366x768 Chromebooks): shrink so moves/flavor stay above the fold. */
+@media screen and (max-height: 900px) {
+  .card-page .card { width: 440px; font-size: 17px; }
+}
 
 .card-head { display: flex; align-items: baseline; gap: .5rem; }
 .card-name { font-weight: 800; font-size: 1.15em; flex: 1; }

@@ -158,6 +158,24 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </dl>
 </section>
 
+<h2>Live-iteration learnings (2026-07-12 evening, first real users)</h2>
+<section class="card">
+<dl>
+<dt>Real users find the gaps that specs and tests cannot.</dt>
+<dd>Within the first play session: a rename typed into the redraw box got painted INTO the artwork as text (fix: a no-text rule in every image prompt, plus placeholder copy steering "Change its LOOK"); the zai provider sat in the dropdown as a loaded trap (no balance = guaranteed friendly error); and the measured 1-in-4 JSON flake produced a real double-flake "escaped!" in the wild (fix: third parse attempt, free).</dd>
+<dd class="why">Every one of these passed all 16 tests. Tests verify the contract you thought of; kids execute the contract you didn't.</dd>
+
+<dt>Separate content from code so delight can scale without engineering.</dt>
+<dd>The loading messages kids loved went from 6 hardcoded strings to 160 canon-flavored phrases in a standalone <code>public/loading-messages.js</code> - same pattern as the canon pack: content-as-data, editable by anyone, no app-code changes to extend. Random starting index so variety shows immediately.</dd>
+
+<dt>Feature requests arriving mid-agent-run get routed by file ownership.</dt>
+<dd>Seven additions landed while one agent was mid-pass. Rule held throughout: whoever owns the file makes the change. Agent owned server.js/app.js (got the queued additions via messages); the orchestrator owned lib/text.js and new content files (edited directly, commits held until the agent released the repo to avoid git index races).</dd>
+
+<dt>The friendly error is UX; the console error is forensics; neither is a log.</dt>
+<dd>"The Pokemon escaped!" plus console.error worked until the terminal closed. Durable one-line entries now append to the Drive-synced <code>errors.log</code>, and the cost ledger got the same treatment (<code>costs.json</code>: session and all-time, per provider) after the browser-side counter proved forgettable.</dd>
+</dl>
+</section>
+
 <h2>Key decisions register (build day additions)</h2>
 <section class="card">
 <table>

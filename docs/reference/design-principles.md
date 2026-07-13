@@ -65,4 +65,5 @@ Rationale: a top bar plus a page-width cap were stealing the vertical space the 
 
 - Screenshot every changed view at 1366x768 and self-critique against this doc before reporting.
 - Verification servers: scratch DATA_DIR + off-port only; never bind 3000; never kill processes you did not start.
-- Print output is sacred: cards are 63x88mm exactly, chrome never leaks into print.
+- Print output is sacred: cards are 63x88mm exactly, chrome never leaks into print. Under print media the art window flex-shrinks so text never bleeds past the card box - verify 0px spill on EVERY card, not just the first card's box size.
+- Deferred check (Jeremy, 2026-07-13): the on-screen `#print` view lets card heights vary with content while actual print output is uniform; a future pass should make the screen view mirror the printed uniformity.

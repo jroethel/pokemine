@@ -76,10 +76,9 @@ function updateTrainerChip() {
   const chip = $('#trainer-chip');
   if (!chip) return;
   const name = localStorage.trainer;
-  chip.classList.remove('hidden');
   chip.innerHTML = name
     ? `${localStorage.trainerAvatar ? `<img src="${localStorage.trainerAvatar}" alt="">` : ''}<span>${esc(name)}</span>`
-    : '<span>Choose trainer</span>';
+    : '<span>Trainer</span>';
 }
 
 // Client-side label overrides. zai is off until the account has balance; flip back when funded.

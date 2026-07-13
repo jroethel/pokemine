@@ -159,6 +159,9 @@ function viewCreate() {
         <p class="create-tag">Dream it up. We'll make the card.</p>
       </div>
       <div class="create-body">
+        ${localStorage.trainer
+          ? `<p class="create-nudge">${localStorage.trainerAvatar ? `<img src="${esc(localStorage.trainerAvatar)}" alt="">` : ''}Playing as <b>${esc(localStorage.trainer)}</b></p>`
+          : `<p class="create-nudge none">No trainer picked - <a href="#trainers">choose or make one</a></p>`}
         <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
         <button id="go" class="big">Generate!</button>
         ${providerSelect()}
@@ -367,8 +370,9 @@ async function route() {
   updateCostBadge();
   const [view, id, extra] = location.hash.slice(1).split('/');
   document.body.dataset.view = view || 'create';
-  // must pick a trainer before doing anything else (help.html is a separate page, unaffected)
-  if (!localStorage.trainer && view !== 'trainers') { location.hash = '#trainers'; return; }
+  // burst brand on every view except the landing/create view (which keeps the plain wordmark)
+  const brandImg = document.querySelector('nav .brand img');
+  if (brandImg) brandImg.src = (view && view !== 'create') ? 'logo-burst.png' : 'logo.jpg';
   updateTrainerChip();
   try {
     if (view === 'trainers') return await viewTrainers();

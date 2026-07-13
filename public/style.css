@@ -191,6 +191,17 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   text-shadow: 0 2px 0 rgba(0, 0, 0, .35);
 }
 .create-body { background: var(--surface); padding: 1.4rem 1.6rem 2rem; }
+/* small inline nudge above the prompt: who you're playing as, or a link to pick a trainer */
+.create-nudge {
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  margin: 0 0 1rem; font-size: .95rem; font-weight: 700; color: var(--brand-navy);
+}
+.create-nudge img {
+  width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--brand-blue);
+}
+.create-nudge.none { color: #5a6a88; font-style: italic; }
+.create-nudge.none a { color: var(--brand-blue); font-weight: 800; }
 .create-body textarea { font-size: 1.15rem; margin-bottom: 1.1rem; min-height: 96px; }
 .create-body .big { animation: pop .5s .12s var(--ease) both; }
 

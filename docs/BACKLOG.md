@@ -13,6 +13,12 @@ Zero dependencies is possible for PNG via a small decoder, but the pragmatic rou
 Applies to: pokemon stages, trainer avatars, all providers (bridge images especially, which arrive with wild margins).
 Old art stays as is; cropping runs only on new generations.
 
+## Display-font button typography cleanup (added 2026-07-13)
+
+Buttons using the PokeDisplay face (Luckiest Guy) render too thick at small sizes and sit high in their boxes.
+Causes, verified in style.css: the base `button` rule stacks `font-weight: 800` on a single-weight display font (browser faux-bold smears the glyphs), `.big` adds `-webkit-text-stroke: .6px` on top, and Luckiest Guy's tall-ascent/near-zero-descent metrics push glyphs toward the top of symmetric padding.
+Fix: `font-weight: normal` wherever PokeDisplay applies (nav links included), drop the text-stroke below ~1.3rem, and re-center optically with asymmetric padding (a touch more top than bottom) or a small `line-height`/`translateY` nudge; verify with a horizontal-midline overlay screenshot.
+
 ## Screen `#print` view height uniformity (added 2026-07-13)
 
 On screen the `#print` grid lets card heights vary with content; actual print output is uniform 63x88mm.

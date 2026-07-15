@@ -245,11 +245,16 @@ test('text: clampStage clamps into the stage band, rounds to 10, enforces prevHp
   const e = { hp: 90, moves: [] };
   clampStage(e, 3, null, 150);
   assert.equal(e.hp, 160);
-  // variant ceilings replace the band ceiling
+  // a variant's own [floor, ceiling] band replaces the stage band
   const m = { hp: 500, moves: [{ damage: 250 }] };
   clampStage(m, 3, 'Mega', 160);
-  assert.equal(m.hp, 340);
-  assert.equal(m.moves[0].damage, 250);
+  assert.equal(m.hp, 340);             // Mega ceiling
+  assert.equal(m.moves[0].damage, 260); // lifted to the Mega floor
+  // a low roll still lands a special above any normal stage 3
+  const low = { hp: 100, moves: [{ damage: 60 }] };
+  clampStage(low, 3, 'Mega');
+  assert.equal(low.hp, 260);
+  assert.equal(low.moves[0].damage, 260);
 });
 
 test('text: rollSpecial rolls only into stage 3 and honors the odds table', () => {

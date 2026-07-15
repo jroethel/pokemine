@@ -132,6 +132,8 @@ function openLightbox(src) {
 
 // ---------- card ----------
 
+const VARIANT_LABELS = { EX: 'EX', DX: 'DX', Mega: 'MEGA' };
+
 function cardHTML(rec, idx) {
   const s = rec.stages[idx];
   const type = (s.types?.[0] || 'normal').toLowerCase();
@@ -145,13 +147,16 @@ function cardHTML(rec, idx) {
     ? `<img class="evo-badge" src="/media/${rec.id}/${esc(rec.stages[idx - 1].art)}?v=${Date.now()}" alt="Evolves from ${esc(rec.stages[idx - 1].name)}">`
     : '';
   return `
-  <div class="card type-${esc(type)} stage-${tier}">
+  <div class="card type-${esc(type)} stage-${tier}${s.variant ? ` variant-${s.variant.toLowerCase()}` : ''}">
     ${evoBadge}
-    <div class="card-eyebrow">${eyebrow}</div>
-    <div class="card-head">
-      <span class="card-name" contenteditable data-field="name">${esc(s.name)}</span>
-      <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
-      <span class="type-badge">${esc((s.types || []).join('/'))}</span>
+    ${s.variant ? `<div class="variant-badge">${VARIANT_LABELS[s.variant]}</div>` : ''}
+    <div class="card-top">
+      <div class="card-eyebrow">${eyebrow}</div>
+      <div class="card-head">
+        <span class="card-name"><span contenteditable data-field="name">${esc(s.name)}</span>${s.variant ? `<span class="variant-label"> ${VARIANT_LABELS[s.variant]}</span>` : ''}</span>
+        <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
+        <span class="type-badge">${esc((s.types || []).join('/'))}</span>
+      </div>
     </div>
     <div class="card-art"><img src="/media/${rec.id}/${s.art}?v=${Date.now()}" alt="${esc(s.name)}"></div>
     <div class="card-category" contenteditable data-field="category">${esc(s.category)}</div>
@@ -164,7 +169,7 @@ function cardHTML(rec, idx) {
       </div>`).join('')}
     </div>
     <div class="card-flavor" contenteditable data-field="flavor">${esc(s.flavor)}</div>
-    <div class="card-foot"><span class="foot-brand">Pokémine</span><span class="foot-no">#${String(rec.number).padStart(3, '0')}</span></div>
+    <div class="card-foot"><span class="foot-brand">Pokémine</span><span class="foot-no">#${String(s.number ?? rec.number).padStart(4, '0')}</span></div>
   </div>`;
 }
 
@@ -201,6 +206,10 @@ function viewCreate() {
 async function viewCard(id, stageIdx) {
   const rec = await api(`/pokemon/${id}`);
   const idx = Math.min(stageIdx ?? rec.stages.length - 1, rec.stages.length - 1);
+  // per-stage Born from: the kid's own words for this stage ('' for an unguided
+  // evolution - the eyebrow's "Evolves from X" covers it; 'evolved' is the legacy sentinel)
+  const bornFrom = rec.stages[idx].prompt && rec.stages[idx].prompt !== 'evolved'
+    ? rec.stages[idx].prompt : '';
   $('#view').innerHTML = `
     <div class="card-page">
       <div class="stage-tabs">${rec.stages.map((s, i) =>
@@ -212,7 +221,7 @@ async function viewCard(id, stageIdx) {
           <div class="hint">Tap the card text to edit it!
             <button id="toggle-editable" class="ghost-btn no-print">Highlight editable</button></div>
           <details class="backstory" open><summary>Backstory</summary>
-            <p contenteditable data-field="backstory">${esc(rec.backstory)}</p></details>
+            <p contenteditable data-field="backstory">${esc(rec.stages[idx].backstory ?? rec.backstory)}</p></details>
           <div class="actions idea-box">
             <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
             <textarea id="alter-text" rows="2" placeholder="give it a hat... make it angry... turn it into a dragon..."></textarea>
@@ -224,7 +233,7 @@ async function viewCard(id, stageIdx) {
             </div>
             ${providerSelect()}
           </div>
-          ${rec.stages[0].prompt ? `<div class="born-from">Born from: "${esc(rec.stages[0].prompt)}"
+          ${bornFrom ? `<div class="born-from">Born from: "${esc(bornFrom)}"
             <button id="use-origin" class="link-btn">use it</button></div>` : ''}
           ${rec.createdBy ? `<div class="born-from byline">by ${esc(rec.createdBy)} on ${friendlyDate(rec.createdAt)}</div>` : ''}
           <button id="release" class="release no-print">Release into the wild</button>
@@ -267,7 +276,7 @@ async function viewCard(id, stageIdx) {
   if (artImg) artImg.onclick = () => openLightbox(artImg.src);
 
   const useOrigin = $('#use-origin');
-  if (useOrigin) useOrigin.onclick = () => { $('#alter-text').value = rec.stages[0].prompt; };
+  if (useOrigin) useOrigin.onclick = () => { $('#alter-text').value = bornFrom; };
 
   $('#release').onclick = async () => {
     const name = rec.stages[idx].name;
@@ -312,24 +321,24 @@ async function viewCard(id, stageIdx) {
 async function viewDex() {
   const all = await api('/pokemon');
   const me = localStorage.trainer;
-  // your Pokemon first, then other trainers', then legacy records with no owner
-  const rank = r => (r.createdBy === me ? 0 : r.createdBy ? 1 : 2);
-  const sorted = [...all].sort((a, b) => rank(a) - rank(b) || a.number - b.number);
-  const tile = rec => {
-    const s = rec.stages[rec.stages.length - 1];
-    return `<a class="dex-item" href="#card/${rec.id}">
+  // one tile per stage, A1,A2,A3,B1...: alphabetical by stage-1 name, then stage
+  const items = all.flatMap(rec => rec.stages.map((s, i) => ({ rec, s, i })))
+    .sort((a, b) => a.rec.stages[0].name.localeCompare(b.rec.stages[0].name)
+      || (a.rec.stages[0].number ?? 0) - (b.rec.stages[0].number ?? 0)
+      || a.i - b.i);
+  const tile = ({ rec, s, i }) => `<a class="dex-item" href="#card/${rec.id}/${i}">
+      ${s.variant ? `<span class="dex-variant">${VARIANT_LABELS[s.variant]}</span>` : ''}
       <img src="/media/${rec.id}/${s.art}" alt="${esc(s.name)}">
-      <div>#${String(rec.number).padStart(3, '0')} ${esc(s.name)}</div>
+      <div>#${String(s.number ?? rec.number).padStart(4, '0')} ${esc(s.name)}</div>
     </a>`;
-  };
   const render = filter => {
-    const list = filter === 'mine' ? sorted.filter(r => r.createdBy === me) : sorted;
+    const list = filter === 'mine' ? items.filter(x => x.rec.createdBy === me) : items;
     $('#dex-grid').innerHTML = list.map(tile).join('')
       || (filter === 'mine' ? '<p>None of these are yours yet. Go make one!</p>' : '<p>No Pokemon yet. Go make one!</p>');
     document.querySelectorAll('.dex-chip').forEach(c => c.classList.toggle('on', c.dataset.f === filter));
   };
   $('#view').innerHTML = `
-    <h1 class="display">Your Pokedex (${all.length})</h1>
+    <h1 class="display">Your Pokedex (${items.length})</h1>
     <div class="dex-filters no-print">
       <button class="dex-chip on" data-f="all">All</button>
       <button class="dex-chip" data-f="mine">Mine</button>

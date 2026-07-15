@@ -172,7 +172,7 @@ app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
 app.post('/api/pokemon', wrap(async (req, res) => {
   const { prompt, provider = DEFAULT_PROVIDER, trainer } = req.body;
   if (!prompt || !prompt.trim()) return res.status(400).json({ error: 'Type an idea first!' });
-  const { stage, backstory } = await text.newPokemon(prompt.trim());
+  const stage = await text.newPokemon(prompt.trim());
   const { artPrompt, ...stageData } = stage;
   const art = await autocrop(await getProvider(provider).generate({
     prompt: withContinuity(provider, artPrompt, ''),
@@ -180,7 +180,6 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   logCost(provider);
   const record = store.create({
     ...(trainer ? { createdBy: trainer } : {}),
-    backstory,
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
   });
   record.stages[0].art = store.saveArt(record.id, `stage-1.${extFor(art.mime)}`, art.data);
@@ -197,24 +196,26 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   }
   const prev = record.stages[record.stages.length - 1];
   const guidance = (instruction || '').trim();
+  const stageNo = record.stages.length + 1;
+  const variant = text.rollSpecial(stageNo); // 5% jackpot, only rolling into stage 3
   // Steering applies at both levels: the text model shapes the evolution concept
   // (name, category, stats) and the image prompt shapes the art.
-  const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined);
+  const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant);
   const p = getProvider(provider);
   const prompt = `${withContinuity(provider,
     `Evolve this creature. Its evolved form: ${artPrompt}
 Same species, same color palette, same art style, clearly a bigger more powerful evolution.
 The evolved form should look sturdier or sharper than before, same palette, keep one signature feature.`,
-    prev.description)}${guidance ? `\nThe kid asked for: ${guidance}.` : ''}\n${NO_TEXT}`;
+    prev.description)}${guidance ? `\nThe kid asked for: ${guidance}.` : ''}${variant ? `\n${text.STAGES.special.variants[variant].art}.` : ''}\n${NO_TEXT}`;
   const reference = p.supportsReference
     ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
     : undefined;
   const art = await autocrop(await p.generate({ prompt, reference }));
   logCost(provider);
-  const n = record.stages.length + 1;
   record.stages.push({
-    ...stageData, prompt: 'evolved',
-    art: store.saveArt(record.id, `stage-${n}.${extFor(art.mime)}`, art.data),
+    ...stageData, prompt: guidance, number: store.nextNumber(),
+    ...(variant ? { variant } : {}),
+    art: store.saveArt(record.id, `stage-${stageNo}.${extFor(art.mime)}`, art.data),
   });
   store.save(record);
   res.json(record);
@@ -238,7 +239,8 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
     : undefined;
   // Without a reference image, hand the artist the text description instead (as withContinuity does).
   const composed = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
-  const prompt = `${composed}\n${NO_TEXT}`;
+  // A special stage keeps its look on Redraw: re-append the variant art phrase.
+  const prompt = `${composed}${stage.variant ? `\n${text.STAGES.special.variants[stage.variant].art}.` : ''}\n${NO_TEXT}`;
   const art = await autocrop(await p.generate({ prompt, reference }));
   logCost(provider);
   store.backupArt(record.id, stage.art);
@@ -261,7 +263,7 @@ app.patch('/api/pokemon/:id', wrap(async (req, res) => {
   for (const k of ['name', 'hp', 'flavor', 'moves', 'category']) {
     if (fields[k] !== undefined) stage[k] = fields[k];
   }
-  if (backstory !== undefined) record.backstory = backstory;
+  if (backstory !== undefined) stage.backstory = backstory; // per-stage; legacy top-level fallback stays on read
   store.save(record);
   res.json(record);
 }));

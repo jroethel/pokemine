@@ -175,7 +175,7 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   const stage = await text.newPokemon(prompt.trim());
   const { artPrompt, ...stageData } = stage;
   const art = await autocrop(await getProvider(provider).generate({
-    prompt: withContinuity(provider, artPrompt, ''),
+    prompt: `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`,
   }));
   logCost(provider);
   const record = store.create({

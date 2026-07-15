@@ -264,7 +264,7 @@ test('text: rollSpecial rolls only into stage 3 and honors the odds table', () =
   try {
     STAGES.special.odds = { Mega: 1 };
     assert.equal(rollSpecial(3), 'Mega');
-    STAGES.special.odds = { EX: 0, DX: 0, Mega: 0 };
+    STAGES.special.odds = { VMAX: 0, EX: 0, Mega: 0 };
     assert.equal(rollSpecial(3), null);
   } finally {
     STAGES.special.odds = saved;

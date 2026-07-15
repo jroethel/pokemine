@@ -132,7 +132,7 @@ function openLightbox(src) {
 
 // ---------- card ----------
 
-const VARIANT_LABELS = { EX: 'EX', DX: 'DX', Mega: 'MEGA' };
+const VARIANT_LABELS = { VMAX: 'VMAX', EX: 'EX', Mega: 'MEGA' };
 
 function cardHTML(rec, idx) {
   const s = rec.stages[idx];
@@ -153,7 +153,9 @@ function cardHTML(rec, idx) {
     <div class="card-top">
       <div class="card-eyebrow">${eyebrow}</div>
       <div class="card-head">
-        <span class="card-name"><span contenteditable data-field="name">${esc(s.name)}</span>${s.variant ? `<span class="variant-label"> ${VARIANT_LABELS[s.variant]}</span>` : ''}</span>
+        <span class="card-name">${s.variant === 'Mega'
+          ? `<span class="variant-label">Mega </span><span contenteditable data-field="name">${esc(s.name)}</span>`
+          : `<span contenteditable data-field="name">${esc(s.name)}</span>${s.variant ? `<span class="variant-label"> ${VARIANT_LABELS[s.variant]}</span>` : ''}`}</span>
         <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
         <span class="type-badge">${esc((s.types || []).join('/'))}</span>
       </div>
@@ -327,7 +329,7 @@ async function viewDex() {
       || (a.rec.stages[0].number ?? 0) - (b.rec.stages[0].number ?? 0)
       || a.i - b.i);
   const tile = ({ rec, s, i }) => `<a class="dex-item" href="#card/${rec.id}/${i}">
-      ${s.variant ? `<span class="dex-variant">${VARIANT_LABELS[s.variant]}</span>` : ''}
+      ${s.variant ? `<span class="dex-variant dv-${s.variant.toLowerCase()}">${VARIANT_LABELS[s.variant]}</span>` : ''}
       <img src="/media/${rec.id}/${s.art}" alt="${esc(s.name)}">
       <div>#${String(s.number ?? rec.number).padStart(4, '0')} ${esc(s.name)}</div>
     </a>`;

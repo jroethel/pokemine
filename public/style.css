@@ -522,7 +522,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .stage-2 .card-foot .foot-no::after { content: "\2666"; }
 .stage-3 .card-foot .foot-no::after { content: "\2605\2605"; color: #b8860b; letter-spacing: -.1em; }
 
-/* ---- rare special tiers on stage 3: EX < DX < MEGA, escalating past .stage-3 ---- */
+/* ---- rare special tiers on stage 3: VMAX < EX < MEGA, escalating past .stage-3 ----
+   VMAX = silver (badge+label), EX = gold, MEGA = rainbow; foil escalates the same way. */
 .variant-badge {
   position: absolute; top: 6px; right: 6px; z-index: 1;
   font-size: .6em; font-weight: 900; letter-spacing: .05em;
@@ -530,8 +531,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   border: 1.5px solid rgba(255, 255, 255, .8);
   box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
 }
-.variant-ex .variant-badge { background: linear-gradient(#f2f5fa, #aab4c6); color: #23304e; }
-.variant-dx .variant-badge {
+.variant-vmax .variant-badge { background: linear-gradient(#f2f5fa, #aab4c6); color: #23304e; }
+.variant-ex .variant-badge {
   background: linear-gradient(#ffe08a, #e09a12); color: #4a3305;
   text-shadow: 0 1px 0 rgba(255, 255, 255, .4);
 }
@@ -540,10 +541,17 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
 }
 /* escalating outer aura (additive: stage-3 box-shadow/foil stay untouched) */
-.card.variant-ex { filter: drop-shadow(0 0 .45em rgba(190, 212, 245, .95)); }
-.card.variant-dx { filter: drop-shadow(0 0 .55em rgba(255, 170, 30, .8)); }
+.card.variant-vmax { filter: drop-shadow(0 0 .45em rgba(190, 212, 245, .95)); }
+.card.variant-ex { filter: drop-shadow(0 0 .55em rgba(255, 170, 30, .8)); }
 .card.variant-mega { filter: drop-shadow(0 0 .7em rgba(170, 110, 255, .85)); }
-/* MEGA: full prismatic foil, stronger than the stage-3 base */
+/* foil ladder: VMAX rides the stage-3 base foil; EX brightens it; MEGA maxes it */
+.card.variant-ex::before {
+  background:
+    linear-gradient(118deg, transparent 22%, rgba(255, 255, 255, .55) 44%, transparent 68%),
+    conic-gradient(from 210deg at 30% 20%,
+      rgba(255, 90, 90, .5), rgba(255, 215, 90, .5), rgba(120, 230, 140, .5),
+      rgba(90, 190, 255, .5), rgba(200, 120, 255, .5), rgba(255, 90, 90, .5));
+}
 .card.variant-mega::before {
   background:
     linear-gradient(118deg, transparent 18%, rgba(255, 255, 255, .6) 42%, transparent 70%),
@@ -554,8 +562,10 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .card.variant-mega .card-name {
   text-shadow: 0 0 .45em rgba(200, 120, 255, .95), 0 0 .2em rgba(255, 255, 255, .8);
 }
-/* the tier label riding the displayed name ("Gyattress MEGA") */
-.variant-label { font-size: .72em; letter-spacing: .03em; color: #8a6a1c; white-space: nowrap; }
+/* the tier label riding the displayed name ("Sockolossus VMAX", "Mega Gyattress") */
+.variant-label { font-size: .72em; letter-spacing: .03em; white-space: nowrap; }
+.variant-vmax .variant-label { color: #5e6c85; }
+.variant-ex .variant-label { color: #a8730a; }
 .card.variant-mega .variant-label { color: #7a3cc8; }
 
 /* fully-evolved state: replaces EVOLVE!, celebratory but clearly not a live button */
@@ -584,13 +594,18 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
   width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 9px;
   background: #fff; margin-bottom: .35rem;
 }
-/* tiny corner marker so a special stage is visible in the grid */
+/* tiny corner marker so a special stage is visible in the grid (silver/gold/rainbow per tier) */
 .dex-item .dex-variant {
   position: absolute; top: .35rem; right: .35rem; z-index: 1;
   font-size: .6rem; font-weight: 900; letter-spacing: .04em;
   padding: .1em .5em; border-radius: 999px;
-  background: linear-gradient(#ffe08a, #e09a12); color: #4a3305;
   border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+}
+.dex-variant.dv-vmax { background: linear-gradient(#f2f5fa, #aab4c6); color: #23304e; }
+.dex-variant.dv-ex { background: linear-gradient(#ffe08a, #e09a12); color: #4a3305; }
+.dex-variant.dv-mega {
+  background: conic-gradient(from 210deg, #ff5a5a, #ffd75a, #78e68c, #5abeff, #c878ff, #ff5a5a);
+  color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
 }
 .dex-item:nth-child(6n+1) { --tile: #ffe3a8; }
 .dex-item:nth-child(6n+2) { --tile: #cfeacb; }

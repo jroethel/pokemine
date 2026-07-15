@@ -149,15 +149,16 @@ function cardHTML(rec, idx) {
   return `
   <div class="card type-${esc(type)} stage-${tier}${s.variant ? ` variant-${s.variant.toLowerCase()}` : ''}">
     ${evoBadge}
-    ${s.variant ? `<div class="variant-badge">${VARIANT_LABELS[s.variant]}</div>` : ''}
     <div class="card-top">
-      <div class="card-eyebrow">${eyebrow}</div>
+      <div class="card-eyebrow-row">
+        <div class="card-eyebrow">${eyebrow}</div>
+        <span class="type-badge">${esc((s.types || []).join('/'))}</span>
+      </div>
       <div class="card-head">
         <span class="card-name">${s.variant === 'Mega'
           ? `<span class="variant-label">Mega </span><span contenteditable data-field="name">${esc(s.name)}</span>`
           : `<span contenteditable data-field="name">${esc(s.name)}</span>${s.variant ? `<span class="variant-label"> ${VARIANT_LABELS[s.variant]}</span>` : ''}`}</span>
         <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
-        <span class="type-badge">${esc((s.types || []).join('/'))}</span>
       </div>
     </div>
     <div class="card-art"><img src="/media/${rec.id}/${s.art}?v=${Date.now()}" alt="${esc(s.name)}"></div>

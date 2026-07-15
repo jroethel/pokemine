@@ -553,13 +553,9 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 .variant-label { font-size: .72em; letter-spacing: .03em; white-space: nowrap; }
 .variant-vmax .variant-label { color: #5e6c85; }
 .variant-ex .variant-label { color: #a8730a; }
-/* MEGA prefix: striking rainbow gradient text, near name-size */
+/* MEGA prefix: all caps, same ink and glow as the name, just under name-size */
 .card.variant-mega .variant-label {
-  font-size: .92em; font-weight: 900; letter-spacing: .01em;
-  background: linear-gradient(105deg, #ff3b3b 5%, #ff9d2e 25%, #ffd400 45%, #35c759 62%, #2e9dff 80%, #b45cff 97%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  text-shadow: none; /* the name's purple glow would bleed through the transparent gradient text */
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .55)) drop-shadow(0 0 .18em rgba(180, 92, 255, .45));
+  font-size: .92em; font-weight: 900; letter-spacing: .01em; color: inherit;
 }
 
 /* fully-evolved state: replaces EVOLVE!, celebratory but clearly not a live button */

@@ -156,7 +156,7 @@ function cardHTML(rec, idx) {
       </div>
       <div class="card-head">
         <span class="card-name">${s.variant === 'Mega'
-          ? `<span class="variant-label">Mega </span><span contenteditable data-field="name">${esc(s.name)}</span>`
+          ? `<span class="variant-label">MEGA </span><span contenteditable data-field="name">${esc(s.name)}</span>`
           : `<span contenteditable data-field="name">${esc(s.name)}</span>${s.variant ? `<span class="variant-label"> ${VARIANT_LABELS[s.variant]}</span>` : ''}`}</span>
         <span class="card-hp"><span contenteditable data-field="hp">${esc(s.hp)}</span> HP</span>
       </div>

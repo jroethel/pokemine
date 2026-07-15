@@ -42,6 +42,32 @@ test('store: archive moves a pokemon out of list into a hidden archive folder', 
   assert.ok(fs.existsSync(path.join(store.root(), '..', 'archive', rec.id, 'pokemon.json')));
 });
 
+test('store: per-stage numbers - create stamps, nextNumber continues, migrateNumbers is ordered and idempotent', () => {
+  const a = store.create({ stages: [{ name: 'Aaastage' }] });
+  assert.ok(a.stages[0].number >= 1); // create stamps stage 1
+  const b = store.create({ stages: [{ name: 'Bbbstage' }] });
+  assert.equal(b.stages[0].number, a.stages[0].number + 1);
+  assert.equal(store.nextNumber(), b.stages[0].number + 1); // continues past max
+
+  // simulate legacy records: strip numbers, add unstamped evolution stages
+  a.stages.push({ name: 'Aaastage2' }, { name: 'Aaastage3' });
+  delete a.stages[0].number;
+  store.save(a);
+  delete b.stages[0].number;
+  store.save(b);
+
+  store.migrateNumbers();
+  const a2 = store.get(a.id), b2 = store.get(b.id);
+  const nums = [...a2.stages.map(s => s.number), b2.stages[0].number];
+  // stamped in (record.number, stage index) order: a1 < a2 < a3 < b1, sequential
+  assert.deepEqual(nums, [nums[0], nums[0] + 1, nums[0] + 2, nums[0] + 3]);
+  // idempotent: a second run changes nothing
+  store.migrateNumbers();
+  assert.deepEqual(store.get(a.id).stages.map(s => s.number), a2.stages.map(s => s.number));
+  assert.equal(store.get(b.id).stages[0].number, b2.stages[0].number);
+  assert.equal(store.nextNumber(), nums[3] + 1);
+});
+
 test('store: trainer create/list/avatar round trip', () => {
   const t = store.trainerCreate({ name: 'Ellie Ketchum', description: 'red cap' });
   assert.match(t.slug, /^ellie-ketchum/);
@@ -171,13 +197,13 @@ test('text: extractJSON parses gemini response text parts', () => {
 test('text: validateStage rejects incomplete stages', () => {
   assert.throws(() => validateStage({ name: 'x' }), /missing field: category/);
   const ok = { name: 'x', category: 'c', types: ['Fire'], hp: 50, flavor: 'f',
-    moves: [], artPrompt: 'a', description: 'd' };
+    moves: [], artPrompt: 'a', description: 'd', backstory: 'b' };
   assert.equal(validateStage(ok), ok);
 });
 
 test('text: validateStage rejects bare-string moves, newPokemon retries once on bad shape', async () => {
   const base = { name: 'x', category: 'c', types: ['Fire'], hp: 50, flavor: 'f',
-    artPrompt: 'a', description: 'd' };
+    artPrompt: 'a', description: 'd', backstory: 'b' };
   assert.throws(() => validateStage({ ...base, moves: ['Salsa Squirt', 'Shell Slam'] }),
     /missing field: moves shape/);
   assert.throws(() => validateStage({ ...base, moves: [{ name: 'm', damage: 10 }] }),
@@ -192,14 +218,51 @@ test('text: validateStage rejects bare-string moves, newPokemon retries once on 
   global.fetch = async () => {
     calls++;
     const moves = calls === 1 ? ['bare string'] : [{ name: 'm', damage: 10, text: 't' }];
-    return respond({ stage: { ...base, moves }, backstory: 'b' });
+    return respond({ ...base, moves });
   };
   try {
     const data = await newPokemon('test');
     assert.equal(calls, 2);
-    assert.equal(data.stage.moves[0].name, 'm');
+    assert.equal(data.moves[0].name, 'm');
   } finally {
     global.fetch = realFetch;
+  }
+});
+
+const { clampStage, rollSpecial, STAGES } = require('../lib/text');
+
+test('text: clampStage clamps into the stage band, rounds to 10, enforces prevHp+10', () => {
+  // stage 1: hp [30,120], dmg [10,60]
+  const s = { hp: 999, moves: [{ damage: 4 }, { damage: 73 }] };
+  clampStage(s, 1, null);
+  assert.equal(s.hp, 120);            // ceiling
+  assert.equal(s.moves[0].damage, 10); // floor
+  assert.equal(s.moves[1].damage, 60); // rounded to 70, then ceiling 60
+  const r = { hp: 87, moves: [] };
+  clampStage(r, 1, null);
+  assert.equal(r.hp, 90);             // rounds to a multiple of 10
+  // evolution must beat prior HP by 10 even when the model regresses
+  const e = { hp: 90, moves: [] };
+  clampStage(e, 3, null, 150);
+  assert.equal(e.hp, 160);
+  // variant ceilings replace the band ceiling
+  const m = { hp: 500, moves: [{ damage: 250 }] };
+  clampStage(m, 3, 'Mega', 160);
+  assert.equal(m.hp, 340);
+  assert.equal(m.moves[0].damage, 250);
+});
+
+test('text: rollSpecial rolls only into stage 3 and honors the odds table', () => {
+  assert.equal(rollSpecial(1), null);
+  assert.equal(rollSpecial(2), null);
+  const saved = STAGES.special.odds;
+  try {
+    STAGES.special.odds = { Mega: 1 };
+    assert.equal(rollSpecial(3), 'Mega');
+    STAGES.special.odds = { EX: 0, DX: 0, Mega: 0 };
+    assert.equal(rollSpecial(3), null);
+  } finally {
+    STAGES.special.odds = saved;
   }
 });
 
@@ -211,8 +274,8 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
         flavor: 'f', moves: [{ name: 'Toot', damage: 30, text: 't' }], artPrompt: 'a', description: 'd' };
       const isNew = JSON.parse(opts.body).contents[0].parts[0].text.includes('A kid wants a new Pokemon');
       const payload = isNew
-        ? { stage, backstory: 'born in a gym sock' }
-        : { ...stage, name: 'Gyattzilla', hp: 120 };
+        ? { ...stage, backstory: 'born in a gym sock' }
+        : { ...stage, name: 'Gyattzilla', hp: 120, backstory: 'still growing in a gym sock' };
       return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
     }
     return realFetch(url, opts);
@@ -241,7 +304,8 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     const rec = r.body;
     assert.equal(rec.stages[0].name, 'Gyatt');
     assert.equal(rec.stages[0].art, 'stage-1.png');
-    assert.equal(rec.backstory, 'born in a gym sock');
+    assert.equal(rec.stages[0].backstory, 'born in a gym sock'); // backstory lives on the stage now
+    assert.ok(rec.stages[0].number >= 1); // per-stage collector number
     assert.ok(store.readArt(rec.id, 'stage-1.png').length > 0);
 
     r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { instruction: 'make it a dragon', provider: 'mock' });
@@ -250,6 +314,9 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.equal(r.body.stages.length, 2);
     assert.equal(r.body.stages[1].name, 'Gyattzilla');
     assert.equal(r.body.stages[1].art, 'stage-2.png');
+    assert.equal(r.body.stages[1].prompt, 'make it a dragon'); // per-stage Born from
+    assert.ok(r.body.stages[1].number > r.body.stages[0].number);
+    assert.equal(r.body.stages[1].variant, undefined); // stage 2 never rolls a special
 
     // second evolution works (3 stages total), a third is refused: TCG rule
     r = await call(`/api/pokemon/${rec.id}/evolve`, 'POST', { provider: 'mock' });
@@ -297,8 +364,8 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
       const payload = asked.includes('A Pokemon trainer named')
         ? { region: 'Kanto', homeGym: 'Pewter City Rock Gym', backstory: 'Grew up hauling boulders near the Pewter City Rock Gym in Kanto.',
             favoritePokemon: 'Snorlax', finishingMove: 'Pulverizing Pancake (Normal, 210)' }
-        : { stage: { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
-            flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' }, backstory: 'b' };
+        : { name: 'Owned', category: 'The Owned Pokemon', types: ['Normal'], hp: 50,
+            flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd', backstory: 'b' };
       return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
     }
     return realFetch(url, opts);
@@ -362,8 +429,8 @@ test('api: cost ledger tracks session and persists all-time', async () => {
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {
     if (String(url).includes('generativelanguage')) {
-      const payload = { stage: { name: 'Penny', category: 'The Coin Pokemon', types: ['Steel'], hp: 40,
-        flavor: 'f', moves: [{ name: 'Spend', damage: 10, text: 't' }], artPrompt: 'a', description: 'd' },
+      const payload = { name: 'Penny', category: 'The Coin Pokemon', types: ['Steel'], hp: 40,
+        flavor: 'f', moves: [{ name: 'Spend', damage: 10, text: 't' }], artPrompt: 'a', description: 'd',
         backstory: 'minted' };
       return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
     }
@@ -399,8 +466,8 @@ test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {
     if (String(url).includes('generativelanguage')) {
-      const payload = { stage: { name: 'Bridgey', category: 'The Proxy Pokemon', types: ['Steel'], hp: 60,
-        flavor: 'f', moves: [{ name: 'Relay', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' },
+      const payload = { name: 'Bridgey', category: 'The Proxy Pokemon', types: ['Steel'], hp: 60,
+        flavor: 'f', moves: [{ name: 'Relay', damage: 20, text: 't' }], artPrompt: 'a', description: 'd',
         backstory: 'routed through a browser tab' };
       return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
     }
@@ -445,7 +512,7 @@ test('text: evolvedStage passes kid guidance into the concept prompt', async () 
   const realFetch = global.fetch;
   let captured;
   const stage = { name: 'x', category: 'c', types: ['Fire'], hp: 90, flavor: 'f',
-    moves: [{ name: 'm', damage: 30, text: 't' }], artPrompt: 'a', description: 'd' };
+    moves: [{ name: 'm', damage: 30, text: 't' }], artPrompt: 'a', description: 'd', backstory: 'b' };
   global.fetch = async (url, opts) => {
     captured = JSON.parse(opts.body).contents[0].parts[0].text;
     return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };

@@ -256,6 +256,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* error box */
+.error-box { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.error-box.hidden { display: none; }
+.error-card { background: #fff; border-radius: 14px; padding: 28px 32px; max-width: 360px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.error-card h2 { margin: 0 0 8px; color: #cc0000; }
+.error-card p { margin: 0 0 20px; color: #333; }
+
 /* card */
 .card-row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
 /* grows to fill the space beside the 2x card, but capped so backstory prose stays within

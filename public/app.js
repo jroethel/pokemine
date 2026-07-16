@@ -32,6 +32,13 @@ function hideLoading() {
   clearInterval(msgTimer);
 }
 
+function showError(msg) {
+  const { title, body } = window.friendlyError(msg);
+  $('#error-box-title').textContent = title;
+  $('#error-box-body').textContent = body;
+  $('#error-box').classList.remove('hidden');
+}
+
 // server-tracked cost badge: "<session images> pics ~ $<session cost> | all-time $<total>"
 function updateCostBadge() {
   const c = config.cost;
@@ -50,7 +57,7 @@ async function generating(fn) {
     updateCostBadge();
     return result;
   } catch (e) {
-    alert(e.message);
+    showError(e.message);
     return null;
   } finally {
     hideLoading();
@@ -507,5 +514,8 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
+
+const errorOk = $('#error-box-ok');
+if (errorOk) errorOk.onclick = () => $('#error-box').classList.add('hidden');
 
 route(); // route() fetches config before rendering

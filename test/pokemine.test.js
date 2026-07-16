@@ -6,6 +6,30 @@ const path = require('path');
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'pokemine-'));
 
+// Parse SSE stream and extract the 'done' event data (for tests that expect JSON from /api/pokemon)
+async function parseSseResponse(res) {
+  const text = await res.text();
+  const events = text.split('\n\n').filter(Boolean).map(block => {
+    const ev = {};
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event: ')) ev.event = line.slice(7);
+      if (line.startsWith('data: ')) ev.data = JSON.parse(line.slice(6));
+    }
+    return ev;
+  });
+  const done = events.find(e => e.event === 'done');
+  if (done) return done.data.record;
+  const error = events.find(e => e.event === 'error');
+  if (error) throw new Error(error.data.message);
+  throw new Error('No done event in SSE response');
+}
+
+async function parseResponseBody(res) {
+  const ct = res.headers.get('content-type');
+  if (ct && ct.includes('text/event-stream')) return await parseSseResponse(res);
+  return await res.json();
+}
+
 const store = require('../lib/store');
 store.init(process.env.DATA_DIR);
 
@@ -292,7 +316,7 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
   const call = (path, method = 'GET', body) => fetch(`${base}${path}`, {
     method, headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(async r => ({ status: r.status, body: await r.json() }));
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
 
   // spy on the prompt the mock artist receives so we can assert the no-text rule is present
   const mock = getProvider('mock');
@@ -381,7 +405,7 @@ test('api: trainers create profile+avatar (mock), pokemon store createdBy', asyn
   const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
     method, headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(async r => ({ status: r.status, body: await r.json() }));
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
 
   try {
     // POST /api/trainers with mock provider -> profile JSON + avatar image file on disk + lore
@@ -447,7 +471,7 @@ test('api: cost ledger tracks session and persists all-time', async () => {
   const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
     method, headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(async r => ({ status: r.status, body: await r.json() }));
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
 
   try {
     // delta-based: the server process is shared across tests, so measure the change
@@ -485,9 +509,11 @@ test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
   const call = (p, method = 'GET', body) => fetch(`${base}${p}`, {
     method, headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
-  }).then(async r => ({ status: r.status, body: await r.json() }));
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
 
   try {
+    // Ping the bridge endpoint so the create handler doesn't reject with bridge-offline
+    await call('/api/bridge/ping', 'POST', {});
     // driver: poll for the job, answer with a 1x1 png (mirrors the Brave extension loop)
     const driver = (async () => {
       for (let i = 0; i < 200; i++) {

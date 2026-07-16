@@ -5,7 +5,7 @@ const path = require('path');
 const store = require('./lib/store');
 const text = require('./lib/text');
 const { listTextProviders } = require('./lib/text-providers');
-const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir } = require('./lib/providers');
+const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir, PIXEL } = require('./lib/providers');
 const { autocrop } = require('./lib/autocrop');
 
 const PORT = process.env.PORT || 3000;
@@ -172,22 +172,67 @@ app.post('/api/trainers/:slug/archive', (req, res) => {
 app.get('/api/pokemon', (req, res) => res.json(store.list()));
 app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
 
+const SSE = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+const PHASES = {
+  text:  { name: 'text',  ball: 'poke',  msg: 'Sending your idea to the Professor...' },
+  image: { name: 'image', ball: 'ultra', msg: 'Drawing your Pokemon...' },
+};
+
+function logGeneration({ id = '-', provider, t0, textMs, imageMs, outcome }) {
+  const line = `${new Date().toISOString()} id=${id} provider=${provider} textMs=${textMs ?? '-'} imageMs=${imageMs ?? '-'} totalMs=${Date.now() - t0} outcome=${outcome}\n`;
+  fs.appendFileSync(path.resolve(DATA_DIR, 'generation.log'), line);
+}
+
 app.post('/api/pokemon', wrap(async (req, res) => {
   const { prompt, provider = DEFAULT_PROVIDER, trainer, textProvider } = req.body;
   if (!prompt || !prompt.trim()) return res.status(400).json({ error: 'Type an idea first!' });
-  const stage = await text.newPokemon(prompt.trim(), { textProvider });
+  // Fail fast instead of a 5-minute hang when the browser driver isn't connected.
+  if (provider === 'bridge' && Date.now() - bridge.lastSeen >= 15000) {
+    return res.status(400).json({ error: 'bridge-offline' });
+  }
+
+  res.set('Content-Type', 'text/event-stream');
+  res.set('Cache-Control', 'no-cache');
+  res.set('Connection', 'keep-alive');
+
+  const t0 = Date.now();
+  let stage, textMs;
+  try {
+    SSE(res, 'phase', PHASES.text);
+    const tText = Date.now();
+    stage = await text.newPokemon(prompt.trim(), { textProvider });
+    textMs = Date.now() - tText;
+  } catch (e) {
+    SSE(res, 'error', { message: e.message });
+    logGeneration({ provider, t0, textMs, outcome: 'error' });
+    return res.end();
+  }
+
   const { artPrompt, ...stageData } = stage;
-  const art = await autocrop(await getProvider(provider).generate({
-    prompt: `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`,
-  }));
-  logCost(provider);
+  let art, outcome = 'ok', warning, imageMs;
+  const tImg = Date.now();
+  try {
+    SSE(res, 'phase', PHASES.image);
+    art = await autocrop(await getProvider(provider).generate({
+      prompt: `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`,
+    }));
+    logCost(provider);
+  } catch (e) {
+    art = { data: PIXEL, mime: 'image/png' }; // placeholder; Redraw retries the picture
+    outcome = 'art-failed'; warning = 'art-failed';
+  }
+  imageMs = Date.now() - tImg;
+
   const record = store.create({
     ...(trainer ? { createdBy: trainer } : {}),
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
   });
   record.stages[0].art = store.saveArt(record.id, `stage-1.${extFor(art.mime)}`, art.data);
   store.save(record);
-  res.json(record);
+  logGeneration({ id: record.id, provider, t0, textMs, imageMs, outcome });
+  SSE(res, 'done', { record, seconds: (Date.now() - t0) / 1000, ...(warning ? { warning } : {}) });
+  res.end();
 }));
 
 app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {

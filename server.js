@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const store = require('./lib/store');
 const text = require('./lib/text');
+const { listTextProviders } = require('./lib/text-providers');
 const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir } = require('./lib/providers');
 const { autocrop } = require('./lib/autocrop');
 
@@ -117,6 +118,8 @@ app.get('/api/config', (req, res) => {
   res.json({
     providers: listProviders(),
     default: DEFAULT_PROVIDER,
+    textProvider: process.env.TEXT_PROVIDER || 'gemini',
+    textProviders: listTextProviders(),
     bridge: { driverConnected: Date.now() - bridge.lastSeen < 15000, lastSeen: bridge.lastSeen || null },
     cost: {
       session: { images: session.images, cost: session.cost },
@@ -170,9 +173,9 @@ app.get('/api/pokemon', (req, res) => res.json(store.list()));
 app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
 
 app.post('/api/pokemon', wrap(async (req, res) => {
-  const { prompt, provider = DEFAULT_PROVIDER, trainer } = req.body;
+  const { prompt, provider = DEFAULT_PROVIDER, trainer, textProvider } = req.body;
   if (!prompt || !prompt.trim()) return res.status(400).json({ error: 'Type an idea first!' });
-  const stage = await text.newPokemon(prompt.trim());
+  const stage = await text.newPokemon(prompt.trim(), { textProvider });
   const { artPrompt, ...stageData } = stage;
   const art = await autocrop(await getProvider(provider).generate({
     prompt: `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`,

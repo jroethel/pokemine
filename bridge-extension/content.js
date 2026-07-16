@@ -23,7 +23,7 @@ async function waitFor(fn, timeout) {
 }
 
 // A generated image is a same-origin img with real pixels (naturalWidth > 200).
-const bigImages = () => [...document.querySelectorAll('img')].filter(im => im.naturalWidth > 200);
+const bigImages = () => [...document.querySelectorAll('img')].filter(im => im.complete && im.naturalWidth > 200);
 
 async function startNewChat() {
   const link = [...document.querySelectorAll('a')]
@@ -43,14 +43,14 @@ async function clickSend() {
   btn.click();
 }
 
-async function waitForNewImage(baseline) {
-  const deadline = Date.now() + 120000;
+async function waitForNewImage(baseline, timeoutMs) {
+  const deadline = Date.now() + (timeoutMs || 280000);
   while (Date.now() < deadline) {
-    await sleep(3000);
+    await sleep(1500);
     const imgs = bigImages();
     if (imgs.length > baseline) return imgs[imgs.length - 1]; // newest is the result
   }
-  throw new Error('no image appeared within 120s');
+  throw new Error('no image appeared within the deadline');
 }
 
 // Direct fetch(img.src) on the blob: URL can fail; canvas extraction is reliable.
@@ -70,7 +70,7 @@ async function runJob(job) {
     const baseline = bigImages().length;
     await clickSend();
     log('submitted, waiting for the image (~18s typical)...');
-    const img = await waitForNewImage(baseline);
+    const img = await waitForNewImage(baseline, job.timeoutMs);
     const b64 = extractPngB64(img);
     await proxy(`/api/bridge/jobs/${job.id}/result`, 'POST', { b64, mime: 'image/png' });
     log('posted result for', job.id);

@@ -85,8 +85,8 @@ app.get('/api/bridge/jobs', (req, res) => {
     const claimedAt = bridge.claims.get(id);
     if (claimedAt && now - claimedAt < CLAIM_TTL) continue;
     try {
-      const { prompt } = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-      jobs.push({ id, prompt });
+      const { prompt, timeoutMs } = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      jobs.push({ id, prompt, timeoutMs });
       bridge.claims.set(id, now);
     } catch { /* half-written job file, pick it up next poll */ }
   }

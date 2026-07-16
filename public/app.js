@@ -39,6 +39,43 @@ function showError(msg) {
   $('#error-box').classList.remove('hidden');
 }
 
+function setPhase(ball, msg) {
+  if (msgTimer) { clearInterval(msgTimer); msgTimer = null; }
+  const el = $('#loading .pokeball');
+  el.className = 'pokeball' + (ball && ball !== 'poke' ? ' ' + ball : '');
+  $('#loading-msg').textContent = msg;
+}
+
+async function createPokemon(prompt, provider, trainer, textProvider) {
+  const res = await fetch('/api/pokemon', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, provider, trainer, textProvider }),
+  });
+  if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'Something went wrong'); }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', record, warning, errMsg;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n\n')) >= 0) {
+      const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
+      let evt = 'message', data = '';
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event: ')) evt = line.slice(7);
+        else if (line.startsWith('data: ')) data += line.slice(6);
+      }
+      if (evt === 'phase') { const p = JSON.parse(data); setPhase(p.ball, p.msg); }
+      else if (evt === 'done') { const d = JSON.parse(data); record = d.record; warning = d.warning; }
+      else if (evt === 'error') { errMsg = JSON.parse(data).message; }
+    }
+  }
+  if (errMsg) throw new Error(errMsg);
+  return { record, warning };
+}
+
 // server-tracked cost badge: "<session images> pics ~ $<session cost> | all-time $<total>"
 function updateCostBadge() {
   const c = config.cost;
@@ -66,6 +103,10 @@ async function generating(fn) {
 
 function currentProvider() {
   return localStorage.provider || config.default;
+}
+
+function currentTextProvider() {
+  return localStorage.textProvider || config.textProvider || 'gemini';
 }
 
 const friendlyDate = iso => {
@@ -112,6 +153,13 @@ function providerSelect() {
       `<option value="${p.name}" ${p.name === currentProvider() ? 'selected' : ''}>
         ${providerLabel(p)}</option>`).join('')}
     </select></label>`;
+}
+
+function textProviderSelect() {
+  const opts = (config.textProviders || []).map(p =>
+    `<option value="${p}" ${p === currentTextProvider() ? 'selected' : ''}>${p}</option>`).join('');
+  return `<label class="provider no-print">words by
+    <select id="text-provider">${opts}</select></label>`;
 }
 
 function updateBridgeHint() {
@@ -199,17 +247,29 @@ function viewCreate() {
         <textarea id="prompt" rows="3" placeholder="A butt Pokemon named Gyatt..."></textarea>
         <button id="go" class="big">Generate!</button>
         ${providerSelect()}
+        ${config.textProviders && config.textProviders.length > 1 ? textProviderSelect() : ''}
         <p id="bridge-hint" class="bridge-hint no-print hidden">Open gemini.google.com in Brave with the Pokemine Bridge extension</p>
       </div>
     </div>`;
   bindProviderSelect();
+  const tsel = $('#text-provider');
+  if (tsel) tsel.onchange = () => { localStorage.textProvider = tsel.value; };
   updateBridgeHint();
   $('#go').onclick = async () => {
     const prompt = $('#prompt').value;
     if (!prompt.trim()) return;
-    const rec = await generating(() =>
-      api('/pokemon', { method: 'POST', body: { prompt, provider: currentProvider(), trainer: localStorage.trainer } }));
-    if (rec) location.hash = `#card/${rec.id}`;
+    showLoading();
+    try {
+      const { record, warning } = await createPokemon(prompt, currentProvider(), localStorage.trainer, currentTextProvider());
+      config = await api('/config').catch(() => config);
+      updateCostBadge();
+      location.hash = `#card/${record.id}`;
+      if (warning) showError('art-failed'); // card saved with placeholder; nudge a Redraw
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      hideLoading();
+    }
   };
 }
 

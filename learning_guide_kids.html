@@ -106,6 +106,37 @@ That's real engineering: three fails, zero quitting, one win.</p>
 </ul>
 </section>
 
-<footer>Built 2026-07-12 by Dad + Claude. The grown-up version of this guide is learning_guide.html.</footer>
+<h2>Skill 5: Checking someone else's plan (two AIs grade each other's homework)</h2>
+<section class="card">
+<p>For the big evolutions update, one AI wrote the plan and a DIFFERENT AI checked it before we built anything.
+Like trading papers in class - you catch way more mistakes in someone else's work.</p>
+<ul>
+<li>The checker didn't just read the plan and nod. It <b>did the math itself</b> - and found the plan's fix for a wonky card layout was wrong. The plan said "nudge it a little more"; the math said "that nudge lands in the exact same broken spot."</li>
+<li>Then the FIRST AI checked the checker back... and found a small mistake in the checker's homework too! Nobody's perfect. Checking each other is how the answer got right.</li>
+<li>The bug itself was sneaky: in CSS, "3em" means "3 times as big as the text next to it." The tiny label had tiny text, so its "3em" was a SHORT hop. The big name had big text, so its "3em" was a LONG hop. Same instruction, different jumps - that's why they didn't line up! Fix: put them both in one box and move the box.</li>
+</ul>
+<div class="big-idea">Big idea: don't just ask "does this sound right?" - grab a pencil and check the numbers. Sounding right and BEING right are different things.</div>
+</section>
+
+<h2>The new evolution rules (and the math inside them)</h2>
+<section class="card">
+<p>Every stage is now its own real card: its own 4-digit number, its own backstory that continues the last one, and its own "Born from" words.</p>
+<p><b>Fences made of arrays.</b> Each stage has a power fence written as a pair of numbers, <code>[lowest, highest]</code>:</p>
+<ul>
+<li>Stage 1 HP: <code>[30, 120]</code> &nbsp; Stage 2: <code>[60, 160]</code> &nbsp; Stage 3: <code>[90, 200]</code></li>
+<li>The fences climb! Evolving always means stronger - and the app FORCES it: if the AI rolls a weak number, the app pushes it back inside the fence and makes sure it beats the old card by at least 10.</li>
+</ul>
+<p><b>The 5% jackpot.</b> When a Pokemon evolves for the last time, the app picks a secret random number between 0 and 1 - like throwing a dart at a number line.</p>
+<ul>
+<li>Lands below 0.030 → <b>VMAX</b> (3 out of every 100 tries - silver!)</li>
+<li>Lands between 0.030 and 0.045 → <b>EX</b> (1.5 out of 100 - rarer, gold!)</li>
+<li>Lands between 0.045 and 0.050 → <b>MEGA</b> (only 1 in 200 - the super jackpot!)</li>
+<li>Add them up: 3% + 1.5% + 0.5% = <b>5%</b>. That's 1 in 20 final evolutions. Rare enough to scream about.</li>
+</ul>
+<p>Jackpot cards get their own bigger fences too - a MEGA is <code>[260, 340]</code>, so even the weakest MEGA beats the strongest normal card (200). Plus a glowing rainbow frame, a MEGA badge, and extra-epic art.</p>
+<div class="big-idea">Big idea: random doesn't mean unfair. We chose the exact odds with math, so rare things feel AMAZING but still happen. (No re-rolling! The dart throws once.)</div>
+</section>
+
+<footer>Built 2026-07-12 by Dad + Claude, evolutions update added 2026-07-15. The grown-up version of this guide is learning_guide.html.</footer>
 </body>
 </html>

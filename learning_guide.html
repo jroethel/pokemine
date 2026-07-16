@@ -192,6 +192,64 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </table>
 </section>
 
-<footer>Generated from the 2026-07-12 brainstorming/design session and extended the same day with the build/execution sessions (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code> and <code>docs/reference/</code>.</footer>
+<h2>Plan-audit learnings (2026-07-14, evolutions &amp; stages)</h2>
+<section class="card">
+<p class="why">Setup: another model wrote the implementation plan for the evolutions/stages feature. Fable's job was to audit it against the real code before anything got built. The audit changed the plan materially; these are the transferable lessons.</p>
+<dl>
+<dt>Audit a plan by re-deriving its load-bearing claims, not by reading for plausibility.</dt>
+<dd>The plan's centerpiece CSS fix ("bump padding 3em to 3.3em") read fine and was mathematically broken: <code>.card-eyebrow</code> has <code>font-size: .62em</code>, so its <code>3em</code> padding resolved to 1.86 card-em while the sibling row got a true 3 card-em - THE reported overlap and differential-shift bug. The 3.3em bump would have moved the eyebrow to 2.05em, still under the 2.5em badge. Five minutes of arithmetic replaced a tune-it-in-browser guess with a deterministic fix (one shared <code>.card-top</code> wrapper inset).</dd>
+<dd class="why">A plan review that only checks structure and coverage approves confident wrongness. Every number that decides a fix gets recomputed from the source files.</dd>
+
+<dt>The audit cuts both ways: the reviewer erred too, and so did the rebuttal.</dt>
+<dd>Fable's review cited the text.js retry comment as evidence of instruction-drift; it is actually about malformed JSON - loose framing, right conclusion. The other model's otherwise-gracious rebuttal then claimed the calc fix was "borderline tight" using content-box arithmetic in a <code>* { box-sizing: border-box }</code> stylesheet. Both errors were caught the same way the plan's error was: by checking the file instead of the prose.</dd>
+<dd class="why">Mutual audit converged on a plan neither model wrote alone. Neither side's confidence was evidence at any point.</dd>
+
+<dt>Check the plan against the user's literal spec, not just against the code.</dt>
+<dd>Jeremy asked for the dex sorted "A1, A2, A3, B1..." alphabetically. The plan silently kept owner-rank as the primary sort key and alphabetized within groups - a plausible-looking deviation that would have shipped. Silent scope drift hides best inside otherwise-correct plans.</dd>
+
+<dt>A plan that changes a contract must name the tests it breaks.</dt>
+<dd>Adding <code>backstory</code> to <code>STAGE_FIELDS</code> turned an existing green test red (the mocked stage lacked the field). Neither the plan nor the first review caught it; the counter-review did. Now a standing check: for every contract change, grep the test fixtures that instantiate that contract.</dd>
+
+<dt>Enforce invariants in code; prompts are suggestions.</dt>
+<dd>The plan carried the per-stage HP/damage bands only in prompt prose, in a codebase whose own comments document the text model flaking ~1 in 4 calls. One drifted roll (a normal stage 3 at HP 240) would have made the 0.5% Mega jackpot look ordinary. A 10-line server-side <code>clampStage</code> made the tier system deterministic.</dd>
+<dd class="why">Same family as the move-shape validation from build day: validate/clamp at the boundary, never trust generation to obey ranges.</dd>
+</dl>
+</section>
+
+<h2>Orchestration learnings (2026-07-14/15, evolutions build)</h2>
+<section class="card">
+<dl>
+<dt>The full loop held: review, counter-review, merged plan, route, one agent, adversarial gate, taste gate.</dt>
+<dd>loop-which scored the merged plan ONE AGENT (coupled full-stack change, superb checkability, judgment already spent). One background Opus implementer executed it; the orchestrator gate reran <code>npm test</code> independently, walked the diff criterion by criterion, verified the live Drive data (13 stages stamped #0001-#0013, zero variant fields on legacy cards, zero test-creature leftovers), and read the screenshots before presenting the two open design calls to Jeremy.</dd>
+
+<dt>An implementer that refuses to improvise is worth more than one that "finishes".</dt>
+<dd>The plan said a forced Mega should show "stats above 200", but the locked design only raised the ceiling. The agent implemented the letter of the spec, flagged the gap under <code>open_questions</code>, and did not invent a fix. The gap went to Jeremy, who chose variant floors (220+/240+/260+ per tier; tiers later renamed to VMAX &lt; EX &lt; Mega); the agent applied the approved delta in a second pass. Spec authority stayed exactly where it belonged.</dd>
+
+<dt>Deviations can be upgrades when the brief makes intent legible.</dt>
+<dd>The agent rendered the MEGA label as a non-editable sibling span instead of concatenating it into the name, so an inline rename can never save "Name MEGA" as the actual name. Reported as a deviation, accepted as an improvement - possible only because deviations had a required slot in the output contract instead of being smuggled or suppressed.</dd>
+
+<dt>Design for interruption paid off within the hour.</dt>
+<dd>The implementer died on a transient API 500 three minutes in. The resume rule (git is ground truth, never trust the narrative) made recovery a one-line check - branch existed, tree clean, zero commits - and a single continue message. No work lost, no duplicate work done.</dd>
+
+<dt>Verification on the mock provider is complete for logic and free - and leaves exactly one named gap.</dt>
+<dd>All seven browser verification steps ran on mock art: zero image spend, no pollution of the family dex, test creatures released after. The one thing mock cannot verify - whether the Mega art embellishment plays well with real Gemini's reference-image continuity - is recorded as an explicit open risk instead of a silent assumption.</dd>
+</dl>
+</section>
+
+<h2>Key decisions register (evolutions session additions)</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>Audit the external plan against source before building</td><td>Execute it as delivered; light structural skim</td><td>Found a broken primary fix, a breaking test, a spec deviation, and a missing invariant - all pre-build.</td></tr>
+<tr><td><code>clampStage</code> enforces stat bands server-side</td><td>Prompt-only ranges</td><td>Model drift is documented in this codebase; jackpot tiers must be deterministic.</td></tr>
+<tr><td>Variant floors (VMAX 220 / EX 240 / Mega 260)</td><td>Ceiling-only specials</td><td>A jackpot that can roll weaker than a good normal card is not a jackpot. Jeremy's call at the gate.</td></tr>
+<tr><td>Tier names VMAX &lt; EX &lt; Mega; "Mega" prefixes the card name</td><td>EX &lt; DX &lt; Mega with suffix labels</td><td>Matches real TCG conventions ("Mega Venusaur", VMAX below EX); silver/gold/rainbow ladder reads instantly.</td></tr>
+<tr><td>Literal-spec dex sort (alpha by stage-1 name, then stage)</td><td>Owner-rank primary with alpha within</td><td>Matches the request as written; the Mine chip already covers ownership; less code.</td></tr>
+<tr><td>Shared <code>.card-top</code> wrapper inset for the badge clearance</td><td>Per-element em padding (broken); <code>calc(3em/.62)</code></td><td>Fixes the root cause and survives future font-size changes.</td></tr>
+<tr><td>Variant label as sibling span, ribbon, and dex marker</td><td>Concatenate into the editable name</td><td>Rename-safe; jackpot visible on card AND in the grid.</td></tr>
+</table>
+</section>
+
+<footer>Generated from the 2026-07-12 brainstorming/design session, extended the same day with the build/execution sessions, and again 2026-07-14/15 with the plan-audit and evolutions build (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code> and <code>docs/reference/</code>.</footer>
 </body>
 </html>

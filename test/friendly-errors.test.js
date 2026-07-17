@@ -11,6 +11,11 @@ test('timeout -> It got away!', () => {
 test('overloaded -> The lab is busy', () => {
   assert.match(friendlyError('gemini text: 503 overloaded').title, /lab is busy/);
 });
+test('high demand -> The lab is busy (real Gemini message, caught in E2E 2026-07-16)', () => {
+  assert.match(friendlyError(
+    'gemini text: This model is currently experiencing high demand. Please try again later.').title,
+    /lab is busy/);
+});
 test('bridge-offline -> Helper not connected', () => {
   assert.match(friendlyError('bridge-offline').title, /not connected/i);
 });

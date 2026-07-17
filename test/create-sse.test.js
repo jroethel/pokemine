@@ -73,6 +73,18 @@ test('text failure -> error event, no done', async () => {
   } finally { text.newPokemon = original; }
 });
 
+test('post-header throw (store failure) -> SSE error event, not a truncated stream', async () => {
+  const store = require('../lib/store');
+  const original = store.saveArt;
+  store.saveArt = () => { throw new Error('disk full'); };
+  try {
+    const { text: body } = await createBody({ prompt: 'a blob', provider: 'mock' });
+    const events = parseEvents(body);
+    assert.ok(events.some(e => e.event === 'error' && /disk full/.test(e.data.message)));
+    assert.ok(!events.some(e => e.event === 'done'));
+  } finally { store.saveArt = original; }
+});
+
 test('bridge offline -> 400 bridge-offline, no stream', async () => {
   const { status, text } = await createBody({ prompt: 'x', provider: 'bridge' });
   assert.equal(status, 400);

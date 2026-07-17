@@ -5,7 +5,7 @@ const RULES = [
     body: "We got the card, but the picture got away. Tap Redraw to try the picture again." },
   { match: /timed out|no image appeared/i, title: 'It got away!',
     body: "That Pokemon took too long to show up. Let's try again!" },
-  { match: /overloaded|429|503|rate limit/i, title: 'The lab is busy',
+  { match: /overloaded|high demand|429|503|rate limit/i, title: 'The lab is busy',
     body: "Professor Oak's computers are swamped. Wait a sec and try again." },
   { match: /bridge-offline|driver offline|driver not connected/i, title: 'Helper not connected',
     body: 'Ask a grown-up to open gemini.google.com in Brave with the Bridge extension.' },

@@ -320,6 +320,10 @@ app.use((err, req, res, next) => {
   console.error(err);
   fs.appendFileSync(path.resolve(DATA_DIR, 'errors.log'),
     `${new Date().toISOString()} ${req.method} ${req.path} :: ${err.message}\n`);
+  if (res.headersSent) { // mid-SSE stream: a 500 would throw here and truncate the stream
+    SSE(res, 'error', { message: err.message });
+    return res.end();
+  }
   res.status(500).json({ error: 'The Pokemon escaped! Try again!', detail: err.message });
 });
 

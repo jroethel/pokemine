@@ -96,5 +96,24 @@ async function tick() {
   }
 }
 
+// Tag the driver window so it's findable in the dock / cmd-Tab / Brave Window
+// menu (otherwise it shows as "Gemini", same as any gemini tab). Interval rather
+// than a MutationObserver because Gemini's SPA sometimes replaces the <title>
+// element entirely, which would orphan an observer on the old node.
+function keepTitle() {
+  document.title = 'Pokemine Bridge';
+  setInterval(() => { if (document.title !== 'Pokemine Bridge') document.title = 'Pokemine Bridge'; }, 1000);
+}
+
 log('driver loaded on', location.href);
-setInterval(tick, 3000);
+// Only the dedicated managed window drives jobs (see background.js). A normal
+// gemini tab could otherwise claim a job and then stall under background throttling.
+chrome.runtime.sendMessage({ type: 'am-i-driver' }, (res) => {
+  if (chrome.runtime.lastError) { log('driver check failed:', chrome.runtime.lastError.message); return; }
+  if (res && res.driver) {
+    keepTitle();
+    setInterval(tick, 3000);
+  } else {
+    log('dormant - not the managed driver window');
+  }
+});

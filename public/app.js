@@ -42,31 +42,26 @@ function showError(msg) {
 
 // Random ball per phase for variety. '' = red Poke Ball; the do-while guarantees
 // a visible swap between phases (and off the initial red) rather than a repeat.
+// The ball swap IS the phase signal - random loading lines keep scrolling throughout.
 const BALLS = ['', 'great', 'ultra', 'master'];
 const MIN_PHASE_MS = 600; // hold each phase visible so fast/mock art doesn't flash by
 let lastBall = '', phaseShownAt = 0;
 
-function setPhase(msg) {
-  if (msgTimer) { clearInterval(msgTimer); msgTimer = null; }
+function setPhase() {
   let ball;
   do { ball = BALLS[Math.floor(Math.random() * BALLS.length)]; }
   while (ball === lastBall);
   lastBall = ball;
   phaseShownAt = Date.now();
-  const el = $('#loading .pokeball');
-  el.className = 'pokeball' + (ball ? ' ' + ball : '');
-  $('#loading-msg').textContent = msg;
+  $('#loading .pokeball').className = 'pokeball' + (ball ? ' ' + ball : '');
 }
 
-async function createPokemon(prompt, provider, trainer, textProvider) {
-  const res = await fetch('/api/pokemon', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, provider, trainer, textProvider }),
-  });
+// Read an SSE stream: swap balls on phase events, surface errors, return the done payload.
+async function streamSSE(res) {
   if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'Something went wrong'); }
   const reader = res.body.getReader();
   const dec = new TextDecoder();
-  let buf = '', record, warning, errMsg;
+  let buf = '', result, errMsg;
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -79,15 +74,30 @@ async function createPokemon(prompt, provider, trainer, textProvider) {
         if (line.startsWith('event: ')) evt = line.slice(7);
         else if (line.startsWith('data: ')) data += line.slice(6);
       }
-      if (evt === 'phase') { const p = JSON.parse(data); setPhase(p.msg); }
-      else if (evt === 'done') { const d = JSON.parse(data); record = d.record; warning = d.warning; }
-      else if (evt === 'error') { errMsg = JSON.parse(data).message; }
+      if (evt === 'phase') setPhase();
+      else if (evt === 'done') result = JSON.parse(data);
+      else if (evt === 'error') errMsg = JSON.parse(data).message;
     }
   }
   if (errMsg) throw new Error(errMsg);
-  // Hold the final ball visible long enough to register, even when art is instant (mock/zai).
-  if (phaseShownAt) { const left = MIN_PHASE_MS - (Date.now() - phaseShownAt); if (left > 0) await new Promise(r => setTimeout(r, left)); }
-  return { record, warning };
+  return result;
+}
+
+// Hold the final ball visible long enough to register, even when art is instant (mock/zai).
+function holdFinalPhase() {
+  if (!phaseShownAt) return Promise.resolve();
+  const left = MIN_PHASE_MS - (Date.now() - phaseShownAt);
+  return left > 0 ? new Promise(r => setTimeout(r, left)) : Promise.resolve();
+}
+
+async function createPokemon(prompt, provider, trainer, textProvider) {
+  const res = await fetch('/api/pokemon', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, provider, trainer, textProvider }),
+  });
+  const data = await streamSSE(res);
+  await holdFinalPhase();
+  return data;
 }
 
 // server-tracked cost badge: "<session images> pics ~ $<session cost> | all-time $<total>"
@@ -351,8 +361,15 @@ async function viewCard(id, stageIdx) {
   const evolveBtn = $('#evolve'); // absent once fully evolved (3 stages)
   if (evolveBtn) evolveBtn.onclick = async () => {
     const instruction = $('#alter-text').value; // optional: steer the evolution
-    const r = await generating(() =>
-      api(`/pokemon/${rec.id}/evolve`, { method: 'POST', body: { instruction, provider: currentProvider() } }));
+    const r = await generating(async () => {
+      const res = await fetch(`/api/pokemon/${rec.id}/evolve`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction, provider: currentProvider() }),
+      });
+      const data = await streamSSE(res);
+      await holdFinalPhase();
+      return data.record;
+    });
     if (r) { $('#alter-text').value = ''; location.hash = `#card/${rec.id}/${r.stages.length - 1}`; }
   };
 

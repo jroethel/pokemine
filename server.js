@@ -242,31 +242,44 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   if (record.stages.length >= 3) {
     return res.status(400).json({ error: `${record.stages[2].name} is fully evolved! No Pokemon evolves more than twice.` });
   }
-  const prev = record.stages[record.stages.length - 1];
-  const guidance = (instruction || '').trim();
-  const stageNo = record.stages.length + 1;
-  const variant = text.rollSpecial(stageNo); // 5% jackpot, only rolling into stage 3
-  // Steering applies at both levels: the text model shapes the evolution concept
-  // (name, category, stats) and the image prompt shapes the art.
-  const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant);
-  const p = getProvider(provider);
-  const prompt = `${withContinuity(provider,
-    `Evolve this creature. Its evolved form: ${artPrompt}
+
+  res.set('Content-Type', 'text/event-stream');
+  res.set('Cache-Control', 'no-cache');
+  res.set('Connection', 'keep-alive');
+
+  try {
+    const prev = record.stages[record.stages.length - 1];
+    const guidance = (instruction || '').trim();
+    const stageNo = record.stages.length + 1;
+    const variant = text.rollSpecial(stageNo); // 5% jackpot, only rolling into stage 3
+    // Steering applies at both levels: the text model shapes the evolution concept
+    // (name, category, stats) and the image prompt shapes the art.
+    SSE(res, 'phase', PHASES.text);
+    const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant);
+    const p = getProvider(provider);
+    SSE(res, 'phase', PHASES.image);
+    const prompt = `${withContinuity(provider,
+      `Evolve this creature. Its evolved form: ${artPrompt}
 Same species, same color palette, same art style, clearly a bigger more powerful evolution.
 The evolved form should look sturdier or sharper than before, same palette, keep one signature feature.`,
-    prev.description)}${guidance ? `\nThe kid asked for: ${guidance}.` : ''}${variant ? `\n${text.STAGES.special.variants[variant].art}.` : ''}\n${NO_TEXT}`;
-  const reference = p.supportsReference
-    ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
-    : undefined;
-  const art = await autocrop(await p.generate({ prompt, reference }));
-  logCost(provider);
-  record.stages.push({
-    ...stageData, prompt: guidance, number: store.nextNumber(),
-    ...(variant ? { variant } : {}),
-    art: store.saveArt(record.id, `stage-${stageNo}.${extFor(art.mime)}`, art.data),
-  });
-  store.save(record);
-  res.json(record);
+      prev.description)}${guidance ? `\nThe kid asked for: ${guidance}.` : ''}${variant ? `\n${text.STAGES.special.variants[variant].art}.` : ''}\n${NO_TEXT}`;
+    const reference = p.supportsReference
+      ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
+      : undefined;
+    const art = await autocrop(await p.generate({ prompt, reference }));
+    logCost(provider);
+    record.stages.push({
+      ...stageData, prompt: guidance, number: store.nextNumber(),
+      ...(variant ? { variant } : {}),
+      art: store.saveArt(record.id, `stage-${stageNo}.${extFor(art.mime)}`, art.data),
+    });
+    store.save(record);
+    SSE(res, 'done', { record });
+  } catch (e) {
+    SSE(res, 'error', { message: e.message });
+  } finally {
+    res.end();
+  }
 }));
 
 app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {

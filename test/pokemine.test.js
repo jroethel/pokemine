@@ -400,6 +400,46 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
   }
 });
 
+test('api: evolve streams text then image phases (two ball swaps)', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const stage = { name: 'Gyatt', category: 'The Butt Pokemon', types: ['Fairy'], hp: 70,
+        flavor: 'f', moves: [{ name: 'Toot', damage: 30, text: 't' }], artPrompt: 'a', description: 'd',
+        backstory: 'b' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const post = (p, b) => fetch(`${base}${p}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b),
+  });
+
+  try {
+    const created = await parseResponseBody(await post('/api/pokemon', { prompt: 'a butt pokemon', provider: 'mock' }));
+    // Read the raw evolve stream so we can see every event, not just the done payload.
+    const res = await post(`/api/pokemon/${created.id}/evolve`, { provider: 'mock' });
+    const raw = (await res.text()).split('\n\n').filter(Boolean).map(block => {
+      const ev = {};
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event: ')) ev.event = line.slice(7);
+        if (line.startsWith('data: ')) ev.data = JSON.parse(line.slice(6));
+      }
+      return ev;
+    });
+    const phases = raw.filter(e => e.event === 'phase').map(e => e.data.name);
+    assert.deepEqual(phases, ['text', 'image']); // two swaps, in order - one per ball
+    assert.ok(raw.some(e => e.event === 'done'));
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+  }
+});
+
 test('api: trainers create profile+avatar (mock), pokemon store createdBy', async () => {
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {

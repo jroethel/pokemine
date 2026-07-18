@@ -53,13 +53,29 @@ async function waitForNewImage(baseline, timeoutMs) {
   throw new Error('no image appeared within the deadline');
 }
 
-// Direct fetch(img.src) on the blob: URL can fail; canvas extraction is reliable.
-function extractPngB64(img) {
+// Gemini serves generated images cross-origin (a Google CDN), so drawing the
+// <img> onto a canvas taints it and toDataURL throws. fetch() negotiates CORS
+// and reaches the bytes directly; canvas is the last-resort fallback for any
+// image fetch can't reach (same-origin or already-CORS-approved <img>).
+async function extractImage(img) {
+  try {
+    const blob = await (await fetch(img.src, { credentials: 'include' })).blob();
+    if (blob.size > 100 && blob.type.startsWith('image/')) {
+      const b64 = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onloadend = () => res(String(fr.result).split(',')[1]);
+        fr.onerror = () => rej(fr.error || new Error('FileReader failed'));
+        fr.readAsDataURL(blob);
+      });
+      return { b64, mime: blob.type };
+    }
+    log('fetch returned a non-image blob -', blob.type, blob.size);
+  } catch (e) { log('fetch extraction failed, trying canvas -', e.message); }
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
   canvas.getContext('2d').drawImage(img, 0, 0);
-  return canvas.toDataURL('image/png').split(',')[1]; // strip the "data:image/png;base64," prefix
+  return { b64: canvas.toDataURL('image/png').split(',')[1], mime: 'image/png' };
 }
 
 async function runJob(job) {
@@ -71,8 +87,8 @@ async function runJob(job) {
     await clickSend();
     log('submitted, waiting for the image (~18s typical)...');
     const img = await waitForNewImage(baseline, job.timeoutMs);
-    const b64 = extractPngB64(img);
-    await proxy(`/api/bridge/jobs/${job.id}/result`, 'POST', { b64, mime: 'image/png' });
+    const { b64, mime } = await extractImage(img);
+    await proxy(`/api/bridge/jobs/${job.id}/result`, 'POST', { b64, mime });
     log('posted result for', job.id);
   } catch (e) {
     log('job failed', job.id, '-', e.message);

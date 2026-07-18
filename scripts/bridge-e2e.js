@@ -14,8 +14,8 @@ const PIXEL_B64 =
 const realFetch = global.fetch;
 global.fetch = async (url, opts) => {
   if (String(url).includes('generativelanguage')) {
-    const payload = { stage: { name: 'Bridgey', category: 'The Proxy Pokemon', types: ['Steel'], hp: 60,
-      flavor: 'f', moves: [{ name: 'Relay', damage: 20, text: 't' }], artPrompt: 'a', description: 'd' },
+    const payload = { name: 'Bridgey', category: 'The Proxy Pokemon', types: ['Steel'], hp: 60,
+      flavor: 'f', moves: [{ name: 'Relay', damage: 20, text: 't' }], artPrompt: 'a', description: 'd',
       backstory: 'routed through a browser tab' };
     return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(payload) }] } }] }) };
   }
@@ -30,9 +30,21 @@ const call = (p, method = 'GET', body) => realFetch(`${base}${p}`, {
   body: body ? JSON.stringify(body) : undefined,
 }).then(async r => ({ status: r.status, body: await r.json() }));
 
+// /api/pokemon streams SSE phases ending in event: done; buffer to the end and
+// pull the record out of the done data line.
+const createBridge = pokemon => realFetch(`${base}/api/pokemon`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(pokemon),
+}).then(async r => {
+  const text = await r.text();
+  const m = text.match(/event: done\ndata: (.+)/);
+  return { status: r.status, body: m ? JSON.parse(m[1]) : null };
+});
+
 (async () => {
   const driver = (async () => {
     for (let i = 0; i < 200; i++) {
+      await call('/api/bridge/ping', 'POST'); // mirrors the real driver; clears the bridge-offline guard
       const { body: jobs } = await call('/api/bridge/jobs');
       if (jobs.length) {
         console.log('[driver] saw job', jobs[0].id, '-', jobs[0].prompt);
@@ -45,11 +57,12 @@ const call = (p, method = 'GET', body) => realFetch(`${base}${p}`, {
   })();
 
   console.log('[app] POST /api/pokemon provider=bridge');
-  const created = await call('/api/pokemon', 'POST', { prompt: 'a proxy pokemon', provider: 'bridge' });
+  const created = await createBridge({ prompt: 'a proxy pokemon', provider: 'bridge' });
   const job = await driver;
 
-  const ok = created.status === 200 && created.body.stages?.[0]?.art === 'stage-1.png' && !!job;
-  console.log('[app] created:', created.status, created.body.id, created.body.stages?.[0]?.art);
+  const rec = created.body.record;
+  const ok = created.status === 200 && rec.stages?.[0]?.art === 'stage-1.png' && !!job;
+  console.log('[app] created:', created.status, rec.id, rec.stages?.[0]?.art);
   console.log(ok ? '\nPASS: bridge create fulfilled by the mock driver loop' : '\nFAIL');
   srv.close();
   process.exit(ok ? 0 : 1);

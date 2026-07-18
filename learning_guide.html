@@ -250,6 +250,90 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; border-top: 
 </table>
 </section>
 
-<footer>Generated from the 2026-07-12 brainstorming/design session, extended the same day with the build/execution sessions, and again 2026-07-14/15 with the plan-audit and evolutions build (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code> and <code>docs/reference/</code>.</footer>
+<h2>Reliability-generation learnings (2026-07-15/16, faster &amp; kinder build)</h2>
+<section class="card">
+<p class="why">Setup: a detailed plan to make card generation rarely fail and never empty-handed (streaming Poke Ball progress, placeholder-art fallback, friendly errors, a server-driven bridge deadline, a pluggable text model). loop-which scored it ONE AGENT; loop-drive drove a single Opus worker; the orchestrator gated.</p>
+<dl>
+<dt>A plan with the judgment already spent routes to ONE AGENT, even at five coupled tasks across ten files.</dt>
+<dd>loop-which scored this plan ONE AGENT despite its size. The decisive questions were checkability (every task shipped a failing-test-first step, so checking was cheaper than producing) and judgment (the plan embedded exact code blocks and line numbers; the worker executed, it did not design). The tasks also chained strictly: T3 consumed T1's provider threading and T2's placeholder export; T5 consumed T3's SSE events and T4's error box. So there was no parallelism a team could exploit, and the producer/critic split had already happened when the plan was written.</dd>
+<dd class="why">Size alone never earns a team. The route turns on independence, separation, and checkability; a big sequential plan with embedded checks is one worker's job.</dd>
+
+<dt>When a worker adapts an existing test to a new contract, audit assertion-equivalence, not just green.</dt>
+<dd>Converting <code>POST /api/pokemon</code> from one JSON blob to an SSE stream broke the existing lifecycle tests at the body-parsing layer. The Opus worker, with no instruction to, updated <code>test/pokemine.test.js</code> to parse SSE: it swapped <code>r.json()</code> for a helper that pulls the <code>done</code> event's <code>record</code>. The suite went green. The right gate question was not "did it pass" but "did the adaptation preserve what the test checks": it did, because only body extraction changed and every assertion on <code>body.id</code> and the lifecycle was untouched. A looser adaptation (asserting less, or swallowing the <code>error</code> event) would also have been green.</dd>
+<dd class="why">A green suite after a test-file deviation proves nothing about whether the test still tests the same thing. Diff the assertions, not the pass count.</dd>
+
+<dt>A deviation's stated justification is itself a claim to re-derive.</dt>
+<dd>The bridge-fulfillment test gained a <code>POST /api/bridge/ping</code> before create, justified as "to satisfy the new bridge-offline guard". Plausible, and the suite was green. But green does not tell you the test passes for the right reason. A grep of <code>server.js</code> confirmed <code>/api/bridge/ping</code> is a pre-existing route (the real extension's heartbeat) that sets the <code>bridge.lastSeen</code> the new guard reads, so the ping genuinely registers presence and the create genuinely clears the guard, instead of the test slipping past a guard that never fires.</dd>
+<dd class="why">Tests that pass for the wrong reason are worse than failing tests, because they look like evidence. The worker's narrative of why it made a change is a hypothesis; verify it against the code.</dd>
+
+<dt>The device contract is a verification lane the agent cannot reach; hand it to the human, don't auto-decide it.</dt>
+<dd>The plan's two open risks are both off-limits to a server-side executor: whether the Chromebook's browser <code>fetch</code> streams a POST response body (SSE-over-POST), and whether the real Gemini DOM still matches the bridge's image-detection heuristic. The unit tests prove the server emits a correct SSE stream through Node's <code>fetch</code>; they cannot prove a Chromebook renders it. The run stopped before both and surfaced them as decisions instead of guessing (it did not, for example, preemptively add the blocking-JSON fallback flag).</dd>
+<dd class="why">A TDD plan's tests cover the server contract. The client and hardware contract is a separate lane; auto-deciding it is the most common way a green run ships a broken feature.</dd>
+
+<dt>Tier availability named the run-card's executor; it did not change the verdict.</dt>
+<dd>Only the Strong tier (Opus 4.8 / GLM 5.2) was available this session. The ONE AGENT verdict was tier-robust because it needs exactly one solid executor and nothing to parallelize, so loop-drive ran with a Strong model orchestrating and executing rather than the usual Frontier orchestrator. The tier shortage did rule out AGENT TEAM (no Frontier critic, and no parallelism to spend a team on anyway), and it made GLM's mid-session 429 a real scheduling fact: Opus carried the long T3 and T5 pushes.</dd>
+<dd class="why">Ask the user what they have, but recognize when the answer changes the brief and not the route. Here the live question was execution flavor (drive now vs. just the verdict), not the abstract tier list.</dd>
+</dl>
+</section>
+
+<h2>Key decisions register (reliability session additions)</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>SSE-over-POST for create progress</td><td>Long-poll JSON; WebSocket</td><td>Streams phase/done/error over the existing POST; zero new deps; works in Chromium. One device-test open on the Chromebook.</td></tr>
+<tr><td>Placeholder-art fallback on image failure</td><td>Fail the whole create; retry the image silently</td><td>Card always saves; Redraw retries just the picture; friendly "Caught it... almost!" box.</td></tr>
+<tr><td>Server-driven bridge deadline (<code>job.timeoutMs</code>)</td><td>Keep the extension's hardcoded 120s</td><td>Server writes the deadline; extension reads it; long generations stop failing early.</td></tr>
+<tr><td>Text model behind the same provider registry as images</td><td>Keep text fixed to Gemini</td><td>Swappable at runtime; z.ai/Anthropic-compat default survives the 2026-08-05 sunset; mirrors the proven image-provider plug.</td></tr>
+<tr><td>bridge-offline guard returns 400 before streaming</td><td>Let it hang until the deadline</td><td>Fails fast with a friendly "Helper not connected" when the driver is stale.</td></tr>
+<tr><td>Timing + outcome logged to <code>generation.log</code></td><td>Console only</td><td>Forensics for "why was that slow" survive the terminal closing.</td></tr>
+</table>
+</section>
+
+<h2>Bridge-reliability &amp; canon-data-flow learnings (2026-07-18)</h2>
+<section class="card">
+<dl>
+<dt>canon-pack.md rides the system prompt for every text generation - creatures and trainers both - and is lazy-read so edits land on the next call.</dt>
+<dd>The data flow worth capturing. <code>CANON_FILE</code> (<code>docs/reference/canon-pack.md</code>) is appended to the base <code>SYSTEM</code> prompt by <code>buildSystem()</code> (<code>lib/text.js:13</code>), and every <code>callJSON()</code> call uses it - so <code>newPokemon</code> (stage 1 / stageShape), <code>evolvedStage</code>, AND <code>trainerBackstory</code> all see the canon. It is read fresh on each call (comment at line 12), so editing canon-pack.md takes effect on the very next generation with no server restart. <code>stageShape</code> itself only hardcodes the 18 Pokemon types as the allowed <code>types</code> list; the myth, Pokedex voice, regions, and tone reach the model through the system prompt, not through the shape.</dd>
+<dd class="why">Surfaced 2026-07-18 answering "does the text prompt / stageShape use pokemon canon cached from the NotebookLM resource?" Deepens the 2026-07-12 "inject, don't bake" entry with the exact call sites and the lazy-read property.</dd>
+
+<dt>FINISHER_MOVES (the NotebookLM canon-moves cache) feeds trainers only, not creatures.</dt>
+<dd>The other NotebookLM-sourced artifact in <code>lib/text.js</code> - canon moves with power &gt; 150 (pokemondb, cached 2026-07-13) - is injected only into <code>trainerBackstory</code>'s prompt, never into <code>newPokemon</code>/<code>stageShape</code>. Creatures get universe canon; trainers additionally get the canon-moves constraint. Knowing which path consumes which cache matters when refreshing sources or debugging "why did the model produce X".</dd>
+
+<dt>Refresh workflow: NotebookLM -> <code>scripts/refresh-notebook-cache.py</code> -> re-distill canon-pack.md and pokemon-design-notes.md.</dt>
+<dd>The raw cache lives at <code>docs/reference/notebook-cache/</code> (21 entries, gitignored, regenerable). The refresh script pulls via the <code>nlm</code> CLI. Distillation into canon-pack.md is a human/AI edit; the file header carries the source list and the distillation date. <code>pokemon-design-notes.md</code> (8.7KB) is the companion for deeper design detail that stageShape references ("details in pokemon-design-notes.md") but does not auto-inject.</dd>
+
+<dt>A backgrounded driver tab silently stalls the bridge; the fix is a dedicated always-visible window, not per-job activation.</dt>
+<dd>The bridge driver loop (<code>setInterval</code>/<code>sleep</code> in <code>content.js</code>) gets timer-throttled when gemini.google.com is backgrounded, and Gemini itself pauses inference on <code>visibilitychange</code> - so jobs stalled until the tab was manually activated, then timed out with no matched error pattern. Root-caused by reading <code>content.js</code> against Chrome's documented background-throttling, confirmed against Jeremy's live observation (active tab = fast; backgrounded = hangs). Fix: the service worker owns a dedicated popup window that stays visible (unthrottled) and hosts the ONLY content script allowed to drive jobs (an <code>am-i-driver</code> gate), so a throttled normal gemini tab cannot claim a job and stall on it.</dd>
+<dd class="why">macOS gotcha surfaced in the same debug: Chrome throttles fully-occluded windows too, so the driver window needs a sliver visible, not merely "not minimized". Jeremy runs maximized windows, so this is a live operating constraint.</dd>
+
+<dt>"The pokeball stopped animating" was a fixture artifact, not a regression - mock art returns in &lt;1ms.</dt>
+<dd>Reported symptom: the Ultra Ball no longer appeared after the text phase. <code>curl -sN</code> of the running server showed both phase events (text/image) sent correctly on the wire; <code>generation.log</code> showed <code>provider=mock, imageMs=0/1</code>. The ultra phase was being set for about one millisecond - imperceptible. The code was working; the test provider was instant. The real fix was a 600ms minimum hold per phase so the animation reads with mock or fast art, not a logic change.</dd>
+<dd class="why">Reinforces the 2026-07-12 "verify the wire bytes" and the "reproduce before fixing" rules: capturing the SSE stream with one curl exonerated the server immediately, and the log's <code>imageMs</code> named the true cause. Treat the provider/fixture as a suspect before treating the symptom as a regression.</dd>
+
+<dt>Jeremy wants manual control over auxiliary windows; never auto-open UI he did not ask for.</dt>
+<dd>Three consecutive pushes in one session, all in the same direction: gate the close-reopen on server liveness ("only reopen if Pokemine is actually running"), then stop auto-opening on Brave start and extension reload, then add a toolbar "Launch driver window" button so the window opens ONLY on his click. The close-while-server-running reopen was kept as a single safety net (an accidental close mid-session should not silently break the kids' next generation). Direction of travel was consistently "I control when this exists."</dd>
+<dd class="why">Preference to carry forward: when a feature creates persistent UI (windows, popups, notifications, overlays), default to on-demand, not unsolicited. Surface it as a question if the auto behavior seems necessary.</dd>
+
+<dt>Title-keep via interval, not MutationObserver: SPAs replace the &lt;title&gt; element, which orphans an observer.</dt>
+<dd>To make the driver window findable in the dock / cmd-Tab / Brave Window menu (it otherwise shows as "Gemini", same as any gemini tab), the content script re-asserts <code>document.title = 'Pokemine Bridge'</code> every second. An interval over a <code>MutationObserver</code> because Gemini's SPA sometimes replaces the <code>&lt;title&gt;</code> element entirely, leaving an observer attached to a dead node. Boring and bulletproof beats event-driven and fragile for a one-string re-assertion in an always-visible tab.</dd>
+
+<dt>LAN IPs drift; do not hardcode them in handoff docs.</dt>
+<dd><code>whats_next.md</code> told the Chromebook to hit <code>192.168.1.159</code>, but the Mac was at <code>.116</code> today - the router had reassigned it overnight. Nothing was wrong with the server. The doc now says "the Mac's current LAN IP (<code>ipconfig getifaddr en0</code>; re-check, it drifts)". Any handoff or run instruction that names a LAN IP should carry the re-check instruction, not a hardcoded octet.</dd>
+</dl>
+</section>
+
+<h2>Key decisions register (2026-07-18 additions)</h2>
+<section class="card">
+<table>
+<tr><th>Decision</th><th>Alternatives considered</th><th>Why</th></tr>
+<tr><td>Dedicated always-visible Brave popup hosts the only driving content script</td><td>Per-job tab activation; alarm-based window polling; silent-audio throttle defeat</td><td>Popup stays <code>visibilityState:visible</code> while Jeremy is in other apps; the <code>am-i-driver</code> gate stops a throttled normal gemini tab from claiming a job and stalling. Chosen over per-job activation (focus steal every generation) and alarms (MV3 30s minimum is too coarse for job pickup).</td></tr>
+<tr><td>Driver window opens only via toolbar "Launch" button; no Brave-start / reload auto-open</td><td>Auto-open on <code>onStartup</code> + <code>onInstalled</code>; unconditional recreate-on-close</td><td>Jeremy's explicit preference for manual control. Close-while-server-running reopen kept as an accidental-close safety net; close-while-server-down stays closed.</td></tr>
+<tr><td>Two phases, random ball each (poke/great/ultra/master), guaranteed swap + 600ms min hold</td><td>Fixed Poke-&gt;Ultra-&gt;Master progression; pure independent random</td><td>Drops the third "master" ball he did not want; variety per generation; the swap-guarantee means the transition always reads; the min hold makes the animation visible with mock or fast art.</td></tr>
+<tr><td>Ball choice moved client-side (server sends phase name + msg only)</td><td>Server picks the ball</td><td>Ball is cosmetic; phase is semantic. Decouples the two and simplifies the wire contract; <code>create-sse.test.js</code> already asserted <code>data.name</code>, so it stayed green.</td></tr>
+<tr><td>Driver window titled "Pokemine Bridge" via a 1s interval</td><td>MutationObserver on <code>&lt;title&gt;</code>; do nothing</td><td>Findable in dock / cmd-Tab / Window menu; robust to the SPA replacing the title element.</td></tr>
+</table>
+</section>
+
+<footer>Generated from the 2026-07-12 brainstorming/design session, extended the same day with the build/execution sessions, again 2026-07-14/15 with the plan-audit and evolutions build, again 2026-07-15/16 with the reliability/faster-kinder build, and again 2026-07-18 with the bridge-reliability and canon-data-flow session (Claude Code + Jeremy). Companion docs live in <code>docs/superpowers/specs/</code> and <code>docs/reference/</code>.</footer>
 </body>
 </html>

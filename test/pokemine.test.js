@@ -440,6 +440,44 @@ test('api: evolve streams text then image phases (two ball swaps)', async () => 
   }
 });
 
+test('api: alter redraw of an evolved stage does not duplicate the description', async () => {
+  const realFetch = global.fetch;
+  const desc = 'A massive yellow bipedal Pokemon with a long S-curve neck';
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const stage = { name: 'Zorg', category: 'The Big Pokemon', types: ['Normal'], hp: 70,
+        flavor: 'f', moves: [{ name: 'Stomp', damage: 30, text: 't' }], artPrompt: 'a',
+        description: desc, backstory: 'b' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const post = (p, b) => fetch(`${base}${p}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b),
+  });
+  const mock = getProvider('mock');
+  const realGen = mock.generate;
+  let lastPrompt = '';
+  mock.generate = async a => { lastPrompt = a.prompt; return realGen(a); };
+
+  try {
+    const created = await parseResponseBody(await post('/api/pokemon', { prompt: 'a big pokemon', provider: 'mock' }));
+    await parseResponseBody(await post(`/api/pokemon/${created.id}/evolve`, { provider: 'mock' })); // stage 1 exists
+    // Redraw stage 1 with no instruction (bridge/zai path: mock art is a placeholder, so no reference).
+    await parseResponseBody(await post(`/api/pokemon/${created.id}/alter`, { stage: 1, provider: 'mock' }));
+    const count = lastPrompt.split(desc).length - 1;
+    assert.equal(count, 1, `description should appear once, appeared ${count}`);
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+    mock.generate = realGen;
+  }
+});
+
 test('api: trainers create profile+avatar (mock), pokemon store createdBy', async () => {
   const realFetch = global.fetch;
   global.fetch = async (url, opts) => {

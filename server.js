@@ -299,7 +299,9 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
     ? { data: current, mime: mimeFor(stage.art) }
     : undefined;
   // Without a reference image, hand the artist the text description instead (as withContinuity does).
-  const composed = reference || !stage.description ? base : `${base}\nThe creature looks like this: ${stage.description}`;
+  // A blank redraw of an evolved stage already embeds it in base, so don't repeat it.
+  const descInBase = !said && idx !== 0;
+  const composed = reference || !stage.description || descInBase ? base : `${base}\nThe creature looks like this: ${stage.description}`;
   // A special stage keeps its look on Redraw: re-append the variant art phrase.
   const prompt = `${composed}${stage.variant ? `\n${text.STAGES.special.variants[stage.variant].art}.` : ''}\n${NO_TEXT}`;
   const art = await autocrop(await p.generate({ prompt, reference }));

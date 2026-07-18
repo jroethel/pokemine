@@ -312,6 +312,9 @@ app.patch('/api/pokemon/:id', wrap(async (req, res) => {
     if (fields[k] !== undefined) stage[k] = fields[k];
   }
   if (backstory !== undefined) stage.backstory = backstory; // per-stage; legacy top-level fallback stays on read
+  if (stageIndex === 0 && fields.name !== undefined) {
+    record.id = store.renameFor(record.id, fields.name); // dir follows the stage-0 name
+  }
   store.save(record);
   res.json(record);
 }));

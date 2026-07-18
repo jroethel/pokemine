@@ -397,7 +397,8 @@ async function viewCard(id, stageIdx) {
       } else {
         body[field] = value;
       }
-      await api(`/pokemon/${rec.id}`, { method: 'PATCH', body }).catch(e => alert(e.message));
+      const updated = await api(`/pokemon/${rec.id}`, { method: 'PATCH', body }).catch(e => alert(e.message));
+      if (updated && updated.id !== rec.id) location.hash = `#card/${updated.id}/${idx}`; // dir renamed to follow the stage-0 name
     };
   });
 }

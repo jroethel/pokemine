@@ -66,6 +66,17 @@ test('store: archive moves a pokemon out of list into a hidden archive folder', 
   assert.ok(fs.existsSync(path.join(store.root(), '..', 'archive', rec.id, 'pokemon.json')));
 });
 
+test('store: renameFor follows a stage-0 name edit, sanitizes bad chars, keeps the suffix', () => {
+  const rec = store.create({ backstory: '', stages: [{ name: 'Original' }] });
+  const suffix = rec.id.slice(rec.id.lastIndexOf('-') + 1);
+  // bad chars + spaces collapse to dashes, uppercase lowercases
+  const renamed = store.renameFor(rec.id, 'Sparky!! The Great ');
+  assert.equal(renamed, `sparky-the-great-${suffix}`);
+  assert.ok(!fs.existsSync(path.join(store.root(), rec.id)));      // old dir gone
+  assert.ok(fs.existsSync(path.join(store.root(), renamed, 'pokemon.json')));
+  assert.equal(store.renameFor(renamed, 'Sparky!! The Great '), renamed); // no-op when unchanged
+});
+
 test('store: per-stage numbers - create stamps, nextNumber continues, migrateNumbers is ordered and idempotent', () => {
   const a = store.create({ stages: [{ name: 'Aaastage' }] });
   assert.ok(a.stages[0].number >= 1); // create stamps stage 1
@@ -369,15 +380,19 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
 
     r = await call(`/api/pokemon/${rec.id}`, 'PATCH', { stage: 0, name: 'Sir Gyatt', hp: 90 });
     assert.equal(r.body.stages[0].name, 'Sir Gyatt');
-    assert.equal(store.get(rec.id).stages[0].hp, 90);
+    // editing the stage-0 name renames the dir to follow it; the new id is in the body
+    assert.notEqual(r.body.id, rec.id);
+    assert.match(r.body.id, /^sir-gyatt-/);
+    const renamedId = r.body.id; // old rec.id dir is gone; use the renamed id from here on
+    assert.equal(store.get(renamedId).stages[0].hp, 90);
 
     r = await call('/api/pokemon');
-    assert.ok(r.body.some(p => p.id === rec.id));
+    assert.ok(r.body.some(p => p.id === renamedId));
 
-    r = await call(`/api/pokemon/${rec.id}`, 'DELETE');
+    r = await call(`/api/pokemon/${renamedId}`, 'DELETE');
     assert.deepEqual(r.body, { ok: true });
     r = await call('/api/pokemon');
-    assert.ok(!r.body.some(p => p.id === rec.id)); // released -> gone from the dex
+    assert.ok(!r.body.some(p => p.id === renamedId)); // released -> gone from the dex
   } finally {
     srv.close();
     global.fetch = realFetch;

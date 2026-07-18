@@ -175,8 +175,8 @@ app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
 const SSE = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
 const PHASES = {
-  text:  { name: 'text',  ball: 'poke',  msg: 'Sending your idea to the Professor...' },
-  image: { name: 'image', ball: 'ultra', msg: 'Drawing your Pokemon...' },
+  text:  { name: 'text',  msg: 'Sending your idea to the Professor...' },
+  image: { name: 'image', msg: 'Drawing your Pokemon...' },
 };
 
 function logGeneration({ id = '-', provider, t0, textMs, imageMs, outcome }) {

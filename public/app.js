@@ -20,6 +20,7 @@ async function api(path, opts = {}) {
 
 let msgTimer;
 function showLoading() {
+  lastBall = ''; // each generation's first phase avoids the initial red Poke Ball
   let i = Math.floor(Math.random() * LOADING_MSGS.length); // random start = variety each time
   $('#loading-msg').textContent = LOADING_MSGS[i];
   $('#loading').classList.remove('hidden');
@@ -39,10 +40,21 @@ function showError(msg) {
   $('#error-box').classList.remove('hidden');
 }
 
-function setPhase(ball, msg) {
+// Random ball per phase for variety. '' = red Poke Ball; the do-while guarantees
+// a visible swap between phases (and off the initial red) rather than a repeat.
+const BALLS = ['', 'great', 'ultra', 'master'];
+const MIN_PHASE_MS = 600; // hold each phase visible so fast/mock art doesn't flash by
+let lastBall = '', phaseShownAt = 0;
+
+function setPhase(msg) {
   if (msgTimer) { clearInterval(msgTimer); msgTimer = null; }
+  let ball;
+  do { ball = BALLS[Math.floor(Math.random() * BALLS.length)]; }
+  while (ball === lastBall);
+  lastBall = ball;
+  phaseShownAt = Date.now();
   const el = $('#loading .pokeball');
-  el.className = 'pokeball' + (ball && ball !== 'poke' ? ' ' + ball : '');
+  el.className = 'pokeball' + (ball ? ' ' + ball : '');
   $('#loading-msg').textContent = msg;
 }
 
@@ -67,12 +79,14 @@ async function createPokemon(prompt, provider, trainer, textProvider) {
         if (line.startsWith('event: ')) evt = line.slice(7);
         else if (line.startsWith('data: ')) data += line.slice(6);
       }
-      if (evt === 'phase') { const p = JSON.parse(data); setPhase(p.ball, p.msg); }
+      if (evt === 'phase') { const p = JSON.parse(data); setPhase(p.msg); }
       else if (evt === 'done') { const d = JSON.parse(data); record = d.record; warning = d.warning; }
       else if (evt === 'error') { errMsg = JSON.parse(data).message; }
     }
   }
   if (errMsg) throw new Error(errMsg);
+  // Hold the final ball visible long enough to register, even when art is instant (mock/zai).
+  if (phaseShownAt) { const left = MIN_PHASE_MS - (Date.now() - phaseShownAt); if (left > 0) await new Promise(r => setTimeout(r, left)); }
   return { record, warning };
 }
 
@@ -414,8 +428,8 @@ async function viewDex() {
       <button class="dex-chip" data-f="mine">Mine</button>
     </div>
     <div id="dex-grid" class="dex"></div>`;
-  document.querySelectorAll('.dex-chip').forEach(c => { c.onclick = () => render(c.dataset.f); });
-  render('all');
+  document.querySelectorAll('.dex-chip').forEach(c => { c.onclick = () => { localStorage.dexFilter = c.dataset.f; render(c.dataset.f); }; });
+  render(localStorage.dexFilter === 'mine' ? 'mine' : 'all'); // remember last filter per browser
 }
 
 // the top-of-page marquee for the active trainer; p is a full profile (GET /trainers/:slug)

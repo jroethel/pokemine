@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/banner.png" alt="Pokemine - silly Pokemon, dreamed up by kids" width="100%">
+</p>
+
 # Pokemine
 
 Silly Pokemon generator. Runs on the Macbook; play from any browser on the LAN.

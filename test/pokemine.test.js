@@ -393,6 +393,15 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.deepEqual(r.body, { ok: true });
     r = await call('/api/pokemon');
     assert.ok(!r.body.some(p => p.id === renamedId)); // released -> gone from the dex
+
+    // A provider error on a non-SSE route must surface the REAL message so the client's
+    // friendlyError can map it (e.g. "high demand" -> "The lab is busy"), not a generic mask.
+    const re = await call('/api/pokemon', 'POST', { prompt: 'another', provider: 'mock' });
+    mock.generate = async () => { throw new Error('gemini: This model is currently experiencing high demand.'); };
+    r = await call(`/api/pokemon/${re.body.id}/alter`, 'POST', { stage: 0, provider: 'mock' });
+    assert.equal(r.status, 500);
+    assert.match(r.body.error, /high demand/);
+    mock.generate = realGen;
   } finally {
     srv.close();
     global.fetch = realFetch;

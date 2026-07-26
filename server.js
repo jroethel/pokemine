@@ -342,7 +342,9 @@ app.use((err, req, res, next) => {
     SSE(res, 'error', { message: err.message });
     return res.end();
   }
-  res.status(500).json({ error: 'The Pokemon escaped! Try again!', detail: err.message });
+  // Forward the real message: the client's friendlyError maps it to a kid-friendly
+  // line (e.g. "high demand" -> "The lab is busy"), with its own generic fallback.
+  res.status(500).json({ error: err.message });
 });
 
 if (require.main === module) {

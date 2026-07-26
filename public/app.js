@@ -33,10 +33,15 @@ function hideLoading() {
   clearInterval(msgTimer);
 }
 
-function showError(msg) {
+// retry (optional): a function that re-runs the failed action reusing the same prompt,
+// surfaced as a "Try Again" button so a kid needn't retype anything after a hiccup.
+let retryFn = null;
+function showError(msg, retry) {
   const { title, body } = window.friendlyError(msg);
   $('#error-box-title').textContent = title;
   $('#error-box-body').textContent = body;
+  retryFn = retry || null;
+  $('#error-box-retry').classList.toggle('hidden', !retryFn);
   $('#error-box').classList.remove('hidden');
 }
 
@@ -110,7 +115,7 @@ function updateCostBadge() {
 }
 
 // wraps an image-generating action with loading UI; cost is tracked server-side
-async function generating(fn) {
+async function generating(fn, retry) {
   showLoading();
   try {
     const result = await fn();
@@ -118,7 +123,7 @@ async function generating(fn) {
     updateCostBadge();
     return result;
   } catch (e) {
-    showError(e.message);
+    showError(e.message, retry);
     return null;
   } finally {
     hideLoading();
@@ -290,7 +295,7 @@ function viewCreate() {
       location.hash = `#card/${record.id}`;
       if (warning) showError('art-failed'); // card saved with placeholder; nudge a Redraw
     } catch (e) {
-      showError(e.message);
+      showError(e.message, () => $('#go').click()); // prompt stays in the box; retry reuses it
     } finally {
       hideLoading();
     }
@@ -369,7 +374,7 @@ async function viewCard(id, stageIdx) {
       const data = await streamSSE(res);
       await holdFinalPhase();
       return data.record;
-    });
+    }, () => evolveBtn.click()); // alter-text keeps its value on failure; retry reuses it
     if (r) { $('#alter-text').value = ''; location.hash = `#card/${rec.id}/${r.stages.length - 1}`; }
   };
 
@@ -391,7 +396,7 @@ async function viewCard(id, stageIdx) {
     const r = await generating(() =>
       api(`/pokemon/${rec.id}/alter`, {
         method: 'POST', body: { instruction, stage: idx, provider: currentProvider() },
-      }));
+      }), () => $('#alter').click()); // alter-text keeps its value on failure; retry reuses it
     if (r) viewCard(rec.id, idx);
   };
 
@@ -556,7 +561,8 @@ async function viewTrainers() {
     const description = $('#t-desc').value.trim();
     if (!name) return;
     const t = await generating(() =>
-      api('/trainers', { method: 'POST', body: { name, description, provider: currentProvider() } }));
+      api('/trainers', { method: 'POST', body: { name, description, provider: currentProvider() } }),
+      () => $('#t-go').click()); // name/desc stay in the inputs on failure; retry reuses them
     if (t) { becomeTrainer(t.name, t.avatar); updateTrainerChip(); viewTrainers(); }
   };
   loadMarquee(trainers);
@@ -609,5 +615,12 @@ window.addEventListener('hashchange', route);
 
 const errorOk = $('#error-box-ok');
 if (errorOk) errorOk.onclick = () => $('#error-box').classList.add('hidden');
+
+const errorRetry = $('#error-box-retry');
+if (errorRetry) errorRetry.onclick = () => {
+  $('#error-box').classList.add('hidden');
+  const fn = retryFn; retryFn = null;
+  if (fn) fn();
+};
 
 route(); // route() fetches config before rendering

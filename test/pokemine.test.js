@@ -115,6 +115,17 @@ test('store: trainer create/list/avatar round trip', () => {
   assert.ok(fs.existsSync(path.join(store.trainersRoot(), t.slug, 'trainer.json')));
 });
 
+test('store: rejects traversal ids', () => {
+  assert.throws(() => store.get('../../etc/passwd'), /invalid id/);
+  assert.throws(() => store.archive('..%2f..'), /invalid id/);
+  assert.throws(() => store.trainerGet('../x'), /invalid id/);
+});
+
+test('store: accepts normal slug ids', () => {
+  const rec = store.create({ stages: [{ name: 'Safey' }] });
+  assert.doesNotThrow(() => store.get(rec.id));
+});
+
 const { getProvider, withContinuity, listProviders, extFor } = require('../lib/providers');
 
 test('providers: mock generates, stubs throw, unknown throws', async () => {

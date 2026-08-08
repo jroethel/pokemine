@@ -1,0 +1,39 @@
+{
+  "run_name": "improve-fix-sequencing",
+  "plan": "docs/plans/2026-08-08-improve-fix-sequencing-plan_loop.md",
+  "integration_branch": "integration/improve-fix-loop",
+  "base_commit": "33ee7f3",
+  "manifests": "/tmp/improve-fix-sequencing/wave{1..4}.json",
+  "units": {
+    "001-traversal": {
+      "wave": 1,
+      "status": "gated-pass",
+      "patch": "/tmp/improve-fix-sequencing/exports/001-traversal.patch",
+      "applied": true
+    },
+    "002-resilience": {
+      "wave": 2,
+      "status": "launching",
+      "patch": null,
+      "applied": false
+    },
+    "004-cleanup": {
+      "wave": 3,
+      "status": "pending",
+      "patch": null,
+      "applied": false
+    },
+    "005-extract": {
+      "wave": 3,
+      "status": "pending",
+      "patch": null,
+      "applied": false
+    },
+    "003-integrity": {
+      "wave": 4,
+      "status": "pending",
+      "patch": null,
+      "applied": false
+    }
+  }
+}

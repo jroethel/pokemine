@@ -74,6 +74,7 @@ const mimeFor = f => f.endsWith('.png') ? 'image/png' : f.endsWith('.webp') ? 'i
 // drivers don't double-run one; a claim older than 150s frees up again.
 const bridge = { lastSeen: 0, claims: new Map() };
 const CLAIM_TTL = 150000;
+const SAFE_BRIDGE_ID = /^[a-z0-9-]+$/;
 
 app.get('/api/bridge/jobs', (req, res) => {
   const dir = bridgeJobsDir();
@@ -94,6 +95,7 @@ app.get('/api/bridge/jobs', (req, res) => {
 });
 
 app.post('/api/bridge/jobs/:id/result', (req, res) => {
+  if (!SAFE_BRIDGE_ID.test(req.params.id)) return res.status(400).json({ error: 'bad job id' });
   const { b64, mime } = req.body;
   const ext = mime === 'image/jpeg' || mime === 'image/jpg' ? 'jpg' : 'png';
   fs.writeFileSync(path.join(bridgeJobsDir(), `${req.params.id}.${ext}`), Buffer.from(b64, 'base64'));
@@ -102,6 +104,7 @@ app.post('/api/bridge/jobs/:id/result', (req, res) => {
 });
 
 app.post('/api/bridge/jobs/:id/error', (req, res) => {
+  if (!SAFE_BRIDGE_ID.test(req.params.id)) return res.status(400).json({ error: 'bad job id' });
   fs.writeFileSync(path.join(bridgeJobsDir(), `${req.params.id}.error`), String(req.body.message || 'driver error'));
   bridge.claims.delete(req.params.id);
   res.json({ ok: true });

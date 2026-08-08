@@ -29,3 +29,9 @@ Entries are chronological; BATCH and DEFAULT entries are the review obligation, 
 - Decision: ringer lint flagged all in-worktree `expect_files` (deliverables die with a passing worktree); repointed every task's `expect_files` at its exported patch in `/tmp/improve-fix-sequencing/exports/`, in all four manifests and the `_loop.md`.
 - Rationale: Step 7 says fix what the dry run flags before launch; the checks already exported the patches, only the manifest field was wrong. All four manifests now lint clean.
 - Reversal path: `git revert` the plan-file commit; regenerate manifests from the plan.
+
+### 5. DEFAULT - wave 1 gate: pass, applied, one distill
+
+- Decision: 001-traversal PASS attempt 1 (run `improve-fix-sequencing-20260808T130401Z-p25113`); patch applied to the integration branch with `--exclude=node_modules`; integrated `npm test` 50 pass / 0 fail; live traversal probe re-derived by the orchestrator (400 / contained / 200). Distill: the patch-export line in the three remaining checks (and the plan) now unstages the `node_modules` symlink before diffing, fixing the patch-pollution my original check design caused.
+- Rationale: the worker's setup symlink was staged by the check's `git add -A`; excluding it at apply time and at export time is mechanical hygiene, not a change to any unit's produced contract. Worker also flagged that `safe()` makes `list()` throw on stray non-slug entries (e.g. `.DS_Store`); accepted as the plan's deliberate chokepoint choice, and wave 2's guarded `list()` skip-and-warn resolves it.
+- Reversal path: `git revert` the wave-1 integration commit.

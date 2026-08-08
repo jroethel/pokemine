@@ -24,7 +24,19 @@ ASK/STOP entries are record-only (resolved live); BATCH/DEFAULT entries are the 
 - Rationale: the accepted finding #8 wrote "open a GitHub issue for each before closing the brief" into the brief itself; the Seams section says "track as a follow-up" for the number-integrity ceiling, and GitHub is the source of record per `config/repo-state.md`.
 - Reversal: `gh issue close 12 13 14` (or edit/relabel individually).
 
-## Open decision NOT auto-taken
+## 4. ASK - plan 003 scope (record-only, 2026-08-08)
 
-Whether to re-scope plan 003 to the real hazards in issue #14 (its current target race does not exist) is a planning judgment, not a gate default.
-It stays in the brief's Open questions for the next planning session.
+- Decision: asked how 003 enters the sequencing plan; human chose re-scope to the issue #14 hazards (evolve lost-update, lossy-list number reuse).
+- Rationale: the brief's open question; a planning judgment, never auto-takeable.
+- Reversal: n/a - resolved live.
+
+## 5. DEFAULT - draft dispatch and no second Rubix pass
+
+- Decision: dispatched one Opus plan-draft worker to rewrite plans/003 and write docs/plans/2026-08-08-improve-fix-sequencing-plan.md; skipped re-running the Rubix review on the resulting plan.
+- Rationale: the plan-draft role pin resolves to Opus per the loop-plan protocol; the Rubix findings were produced this run and are baked into the drafting instructions, so a second two-lens pass would re-review its own output.
+- Reversal: cheap - request the Rubix pass on the finished plan and it runs as usual.
+
+## Open decisions
+
+None remaining.
+The 003 re-scope question was resolved live at entry 4 (re-scope to the issue #14 hazards).

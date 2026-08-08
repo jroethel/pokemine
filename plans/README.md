@@ -9,20 +9,23 @@ row when done.
 
 | Plan | Title                                             | Priority | Effort | Depends on | Status |
 |------|---------------------------------------------------|----------|--------|------------|--------|
-| 001  | Guard request-derived filesystem paths            | P1       | S      | —          | TODO   |
-| 002  | Make the on-disk store resilient to Drive stalls  | P1       | M      | —          | TODO   |
-| 004  | Remove dead code + fix README env vars            | P2       | S      | —          | TODO   |
-| 005  | Extract public/app.js pure logic and unit-test it | P2       | M      | —          | TODO   |
-| 003  | Serialize Pokedex/collector number allocation     | P3       | M      | 002        | TODO   |
+| 001  | Guard request-derived filesystem paths            | P1       | S      | -          | TODO   |
+| 002  | Make the on-disk store resilient to Drive stalls  | P1       | M      | -          | TODO   |
+| 004  | Remove dead code + fix README env vars            | P2       | S      | -          | TODO   |
+| 005  | Extract public/app.js pure logic and unit-test it | P2       | M      | -          | TODO   |
+| 003  | Record-update integrity + durable numbering       | P2       | M      | 002, 004   | TODO   |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale)
 
 ## Dependency notes
 
-- 003 depends on 002: both edit `lib/store.js` `create()`/`save()`. Landing 002 first
-  (atomic write + guarded reads) gives 003 a clean base and avoids a merge conflict in
-  the same functions.
-- 001, 004, 005 are independent of everything and of each other; run them in any order.
+- 003 depends on 002 (hard): 003's Hazard B exists because 002 makes `list()` lossy, and
+  the counter reuses 002's atomic-write shape. Landing 002 first also avoids a merge
+  conflict in the same functions.
+- 003 depends on 004 (ordering): both edit `create()`; 004's shared `slugify` lands first
+  so 003 rebases clean.
+- 001, 004, 005 are independent of each other; run them in any order (the sequencing plan
+  in `docs/plans/2026-08-08-improve-fix-sequencing-plan.md` fixes a specific order).
 
 ## Findings considered and rejected (so they aren't re-audited)
 

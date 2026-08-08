@@ -134,6 +134,16 @@ test('store: list skips a corrupt record instead of throwing', () => {
   assert.ok(!store.list().some(r => r.id === rec.id)); // bad record dropped
 });
 
+test('store: list scans skip stray non-slug entries like .DS_Store', () => {
+  fs.writeFileSync(path.join(process.env.DATA_DIR, 'pokemon', '.DS_Store'), 'stray');
+  fs.writeFileSync(path.join(process.env.DATA_DIR, 'trainers', '.DS_Store'), 'stray');
+  let list, trainers;
+  assert.doesNotThrow(() => { list = store.list(); });
+  assert.doesNotThrow(() => { trainers = store.trainersList(); });
+  assert.ok(!list.some(r => r.id === '.DS_Store'));
+  assert.ok(!trainers.some(t => t.slug === '.DS_Store'));
+});
+
 test('store: get returns null for a missing id', () => {
   assert.equal(store.get('nope-does-not-exist'), null);
 });

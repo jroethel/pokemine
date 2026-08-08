@@ -1,4 +1,0 @@
-https://github.com/pokeapi/pokeapi
-https://github.com/hollanddd/pokedex-mcp
-https://pokeapi.co/
-

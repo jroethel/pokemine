@@ -41,3 +41,9 @@ Entries are chronological; BATCH and DEFAULT entries are the review obligation, 
 - Decision: 002-resilience PASS attempt 1 (run `...T130912Z-p28622`); clean patch (no pollution) applied; integrated `npm test` 53 pass / 0 fail; check greps re-derived on the integrated tree (4 catch guards, atomic `renameSync` save at store.js:81, five 404 guards). No distill needed this wave.
 - Rationale: substance matches the store contract downstream waves consume (lossy `list()`, atomic `save()`, ENOENT-null + 404s before SSE headers); the three regression tests match the plan's names.
 - Reversal path: `git revert` the wave-2 integration commit.
+
+### 7. DEFAULT - wave 3 gate: both parallel units pass, applied
+
+- Decision: 004-cleanup and 005-extract both PASS attempt 1 (run `...T131252Z-p30715`, `max_parallel: 2`, no warm-up NO-OP); patches disjoint exactly per ownership (no conflict); both applied; integrated `npm test` 59 pass / 0 fail; `card-format.js` loads clean under node. 005 took its optional `stageLabel` extraction (spec-sanctioned when it separates cleanly); 004 skipped its optional Step 4 (Gemini dedup stays GitHub #13).
+- Rationale: 004 is byte-identical dedup plus README env docs; 005 is verbatim extraction with the dual-export shim and correct script order. The orchestrator-as-sole-writer protocol for `plans/README.md` held (both workers explicitly deferred the row edit).
+- Reversal path: `git revert` the wave-3 integration commit.

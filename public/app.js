@@ -1,6 +1,4 @@
 const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 let config = { providers: [], default: 'gemini' };
 const LOADING_MSGS = window.LOADING_MSGS || ['Catching wild pixels...'];
@@ -48,7 +46,6 @@ function showError(msg, retry) {
 // Random ball per phase for variety. '' = red Poke Ball; the do-while guarantees
 // a visible swap between phases (and off the initial red) rather than a repeat.
 // The ball swap IS the phase signal - random loading lines keep scrolling throughout.
-const BALLS = ['', 'great', 'ultra', 'master'];
 const MIN_PHASE_MS = 600; // hold each phase visible so fast/mock art doesn't flash by
 let lastBall = '', phaseShownAt = 0;
 
@@ -138,11 +135,6 @@ function currentTextProvider() {
   return localStorage.textProvider || config.textProvider || 'gemini';
 }
 
-const friendlyDate = iso => {
-  const d = new Date(iso);
-  return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-};
-
 // localStorage.trainer holds the current trainer NAME (used for createdBy + the "Mine" dex
 // filter, so it stays the name, not the slug); trainerAvatar its picture (for the nav chip).
 // The profile fetch needs the slug - resolved from the trainers list by name at call time,
@@ -165,15 +157,6 @@ function updateTrainerChip() {
   chip.innerHTML = name
     ? `${localStorage.trainerAvatar ? `<img src="${localStorage.trainerAvatar}" alt="">` : ''}<span>${esc(name)}</span>`
     : '<span>Trainer</span>';
-}
-
-// Client-side label overrides. zai is off until the account has balance; flip back when funded.
-const PROVIDER_LABELS = { zai: 'zai (off)' };
-
-function providerLabel(p) {
-  if (p.name === 'bridge') return config.bridge?.driverConnected ? 'bridge' : 'bridge (driver offline)';
-  if (PROVIDER_LABELS[p.name]) return PROVIDER_LABELS[p.name];
-  return `${p.name}${p.real ? '' : ' (soon)'}`;
 }
 
 function providerSelect() {
@@ -216,15 +199,11 @@ function openLightbox(src) {
 
 // ---------- card ----------
 
-const VARIANT_LABELS = { VMAX: 'VMAX', EX: 'EX', Mega: 'MEGA' };
-
 function cardHTML(rec, idx) {
   const s = rec.stages[idx];
   const type = (s.types?.[0] || 'normal').toLowerCase();
   // top-left eyebrow like a real Base Set card: "Basic" or "Stage N · Evolves from <prev>"
-  const eyebrow = idx === 0
-    ? 'Basic Pokémon'
-    : `Stage ${idx} · Evolves from ${esc(rec.stages[idx - 1].name)}`; // TCG convention: 2nd form = Stage 1
+  const eyebrow = stageLabel(rec, idx); // TCG convention: 2nd form = Stage 1 (see card-format.js)
   // frame flourish scales with evolution stage (Basic -> Stage 1 -> fully-evolved EX)
   const tier = Math.min(idx + 1, 3);
   const evoBadge = idx > 0

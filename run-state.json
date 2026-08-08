@@ -19,19 +19,19 @@
     },
     "004-cleanup": {
       "wave": 3,
-      "status": "launching",
-      "patch": null,
-      "applied": false
+      "status": "gated-pass",
+      "patch": "/tmp/improve-fix-sequencing/exports/004-cleanup.patch",
+      "applied": true
     },
     "005-extract": {
       "wave": 3,
-      "status": "launching",
-      "patch": null,
-      "applied": false
+      "status": "gated-pass",
+      "patch": "/tmp/improve-fix-sequencing/exports/005-extract.patch",
+      "applied": true
     },
     "003-integrity": {
       "wave": 4,
-      "status": "pending",
+      "status": "launching",
       "patch": null,
       "applied": false
     }

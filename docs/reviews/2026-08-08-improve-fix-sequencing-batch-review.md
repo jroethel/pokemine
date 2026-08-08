@@ -33,5 +33,11 @@ Entries are chronological; BATCH and DEFAULT entries are the review obligation, 
 ### 5. DEFAULT - wave 1 gate: pass, applied, one distill
 
 - Decision: 001-traversal PASS attempt 1 (run `improve-fix-sequencing-20260808T130401Z-p25113`); patch applied to the integration branch with `--exclude=node_modules`; integrated `npm test` 50 pass / 0 fail; live traversal probe re-derived by the orchestrator (400 / contained / 200). Distill: the patch-export line in the three remaining checks (and the plan) now unstages the `node_modules` symlink before diffing, fixing the patch-pollution my original check design caused.
-- Rationale: the worker's setup symlink was staged by the check's `git add -A`; excluding it at apply time and at export time is mechanical hygiene, not a change to any unit's produced contract. Worker also flagged that `safe()` makes `list()` throw on stray non-slug entries (e.g. `.DS_Store`); accepted as the plan's deliberate chokepoint choice, and wave 2's guarded `list()` skip-and-warn resolves it.
+- Rationale: the worker's setup symlink was staged by the check's `git add -A`; excluding it at apply time and at export time is mechanical hygiene, not a change to any unit's produced contract. Worker also flagged that `safe()` makes `list()` throw on stray non-slug entries (e.g. `.DS_Store`); accepted as the plan's deliberate chokepoint choice (wave 2 does NOT resolve it - its guard sits inside `list()`'s map, while the `existsSync` filter still routes through `safe()`; this stays known, accepted behavior per plan 001's maintenance notes).
 - Reversal path: `git revert` the wave-1 integration commit.
+
+### 6. DEFAULT - wave 2 gate: pass, applied
+
+- Decision: 002-resilience PASS attempt 1 (run `...T130912Z-p28622`); clean patch (no pollution) applied; integrated `npm test` 53 pass / 0 fail; check greps re-derived on the integrated tree (4 catch guards, atomic `renameSync` save at store.js:81, five 404 guards). No distill needed this wave.
+- Rationale: substance matches the store contract downstream waves consume (lossy `list()`, atomic `save()`, ENOENT-null + 404s before SSE headers); the three regression tests match the plan's names.
+- Reversal path: `git revert` the wave-2 integration commit.

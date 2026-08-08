@@ -156,6 +156,7 @@ app.post('/api/trainers', wrap(async (req, res) => {
 
 app.get('/api/trainers/:slug', wrap(async (req, res) => {
   let t = store.trainerGet(req.params.slug);
+  if (!t) return res.status(404).json({ error: 'Not found' });
   // Backfill once and persist: covers trainers made before profiles existed AND
   // profiles from before favorite Pokemon / finishing move were added.
   if (!t.backstory || !t.finishingMove) {
@@ -173,7 +174,11 @@ app.post('/api/trainers/:slug/archive', (req, res) => {
 });
 
 app.get('/api/pokemon', (req, res) => res.json(store.list()));
-app.get('/api/pokemon/:id', (req, res) => res.json(store.get(req.params.id)));
+app.get('/api/pokemon/:id', (req, res) => {
+  const rec = store.get(req.params.id);
+  if (!rec) return res.status(404).json({ error: 'Not found' });
+  res.json(rec);
+});
 
 const SSE = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
@@ -241,6 +246,7 @@ app.post('/api/pokemon', wrap(async (req, res) => {
 app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
   const { provider = DEFAULT_PROVIDER, instruction } = req.body;
   const record = store.get(req.params.id);
+  if (!record) return res.status(404).json({ error: 'Not found' });
   // Like the real TCG: Basic -> Stage 1 -> Stage 2, then fully evolved.
   if (record.stages.length >= 3) {
     return res.status(400).json({ error: `${record.stages[2].name} is fully evolved! No Pokemon evolves more than twice.` });
@@ -288,6 +294,7 @@ The evolved form should look sturdier or sharper than before, same palette, keep
 app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   const { instruction, stage: stageIndex, provider = DEFAULT_PROVIDER } = req.body;
   const record = store.get(req.params.id);
+  if (!record) return res.status(404).json({ error: 'Not found' });
   const idx = stageIndex === undefined ? record.stages.length - 1 : stageIndex;
   const stage = record.stages[idx];
   const said = (instruction || '').trim();
@@ -325,6 +332,7 @@ app.delete('/api/pokemon/:id', (req, res) => {
 app.patch('/api/pokemon/:id', wrap(async (req, res) => {
   const { stage: stageIndex = 0, backstory, ...fields } = req.body;
   const record = store.get(req.params.id);
+  if (!record) return res.status(404).json({ error: 'Not found' });
   const stage = record.stages[stageIndex];
   for (const k of ['name', 'hp', 'flavor', 'moves', 'category']) {
     if (fields[k] !== undefined) stage[k] = fields[k];

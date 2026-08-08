@@ -126,6 +126,30 @@ test('store: accepts normal slug ids', () => {
   assert.doesNotThrow(() => store.get(rec.id));
 });
 
+test('store: list skips a corrupt record instead of throwing', () => {
+  const rec = store.create({ stages: [{ name: 'Corruptible' }] });
+  const p = path.join(process.env.DATA_DIR, 'pokemon', rec.id, 'pokemon.json');
+  fs.writeFileSync(p, '{ not valid json');
+  assert.doesNotThrow(() => store.list());             // does not throw
+  assert.ok(!store.list().some(r => r.id === rec.id)); // bad record dropped
+});
+
+test('store: get returns null for a missing id', () => {
+  assert.equal(store.get('nope-does-not-exist'), null);
+});
+
+test('GET /api/pokemon/:id returns 404 for missing id', async () => {
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const res = await fetch(`${base}/api/pokemon/nope-missing`);
+    assert.equal(res.status, 404);
+  } finally {
+    srv.close();
+  }
+});
+
 const { getProvider, withContinuity, listProviders, extFor } = require('../lib/providers');
 
 test('providers: mock generates, stubs throw, unknown throws', async () => {

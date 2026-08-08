@@ -10,7 +10,7 @@ row when done.
 | Plan | Title                                             | Priority | Effort | Depends on | Status |
 |------|---------------------------------------------------|----------|--------|------------|--------|
 | 001  | Guard request-derived filesystem paths            | P1       | S      | -          | DONE   |
-| 002  | Make the on-disk store resilient to Drive stalls  | P1       | M      | -          | TODO   |
+| 002  | Make the on-disk store resilient to Drive stalls  | P1       | M      | -          | DONE   |
 | 004  | Remove dead code + fix README env vars            | P2       | S      | -          | TODO   |
 | 005  | Extract public/app.js pure logic and unit-test it | P2       | M      | -          | TODO   |
 | 003  | Record-update integrity + durable numbering       | P2       | M      | 002, 004   | TODO   |

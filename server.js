@@ -251,7 +251,7 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
     const prev = record.stages[record.stages.length - 1];
     const guidance = (instruction || '').trim();
     const stageNo = record.stages.length + 1;
-    const variant = text.rollSpecial(stageNo); // 20% jackpot, only rolling into stage 3
+    const variant = text.rollSpecial(stageNo); // 30% jackpot, only rolling into stage 3
     // Steering applies at both levels: the text model shapes the evolution concept
     // (name, category, stats) and the image prompt shapes the art.
     SSE(res, 'phase', PHASES.text);

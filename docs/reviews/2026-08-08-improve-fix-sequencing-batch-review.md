@@ -47,3 +47,9 @@ Entries are chronological; BATCH and DEFAULT entries are the review obligation, 
 - Decision: 004-cleanup and 005-extract both PASS attempt 1 (run `...T131252Z-p30715`, `max_parallel: 2`, no warm-up NO-OP); patches disjoint exactly per ownership (no conflict); both applied; integrated `npm test` 59 pass / 0 fail; `card-format.js` loads clean under node. 005 took its optional `stageLabel` extraction (spec-sanctioned when it separates cleanly); 004 skipped its optional Step 4 (Gemini dedup stays GitHub #13).
 - Rationale: 004 is byte-identical dedup plus README env docs; 005 is verbatim extraction with the dual-export shim and correct script order. The orchestrator-as-sole-writer protocol for `plans/README.md` held (both workers explicitly deferred the row edit).
 - Reversal path: `git revert` the wave-3 integration commit.
+
+### 8. DEFAULT - wave 4 gate: pass, applied, teeth verified
+
+- Decision: 003-integrity PASS attempt 1 (run `...T131827Z-p33627`); teeth verified in the RAW worker log (both new tests failed pre-fix with the predicted failures: lost update `2 == 3`, dex reuse `17 must exceed 17`); patch applied; integrated `npm test` 61 pass / 0 fail; no-mutex/no-async grep empty on the integrated tree.
+- Rationale: counter design matches the produced contract (`counters.json` under DATA_DIR, atomic bump, loud throw on unreadable, present-but-unreadable file protected from reset); evolve/alter re-read after the await with no await before save; the concurrent-evolve test forces the interleave with a real barrier. Worker's `^not ok` grep deviation (Node spec reporter emits `✖`) accepted as an honest, correct attribution.
+- Reversal path: `git revert` the wave-4 integration commit.

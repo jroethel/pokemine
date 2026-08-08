@@ -31,9 +31,10 @@
     },
     "003-integrity": {
       "wave": 4,
-      "status": "launching",
-      "patch": null,
-      "applied": false
+      "status": "gated-pass",
+      "patch": "/tmp/improve-fix-sequencing/exports/003-integrity.patch",
+      "applied": true
     }
-  }
+  },
+  "run_complete": true
 }

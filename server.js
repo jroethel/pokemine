@@ -277,13 +277,24 @@ The evolved form should look sturdier or sharper than before, same palette, keep
       : undefined;
     const art = await autocrop(await p.generate({ prompt, reference }));
     logCost(provider);
-    record.stages.push({
-      ...stageData, prompt: guidance, number: store.nextNumber(),
+    // Re-read after the multi-second image await: a concurrent evolve/alter may
+    // have saved a new stage while we awaited. Mutating the pre-await copy would
+    // silently discard their write. The re-read, re-check, push and save below run
+    // with no await between them, so they are atomic against another request.
+    const fresh = store.get(record.id);
+    if (!fresh) { SSE(res, 'error', { message: 'This Pokemon is gone.' }); return; }
+    if (fresh.stages.length >= 3) {
+      SSE(res, 'error', { message: `${fresh.stages[2].name} is fully evolved! No Pokemon evolves more than twice.` });
+      return;
+    }
+    const freshStageNo = fresh.stages.length + 1;
+    fresh.stages.push({
+      ...stageData, prompt: guidance, number: store.allocCollector(),
       ...(variant ? { variant } : {}),
-      art: store.saveArt(record.id, `stage-${stageNo}.${extFor(art.mime)}`, art.data),
+      art: store.saveArt(fresh.id, `stage-${freshStageNo}.${extFor(art.mime)}`, art.data),
     });
-    store.save(record);
-    SSE(res, 'done', { record });
+    store.save(fresh);
+    SSE(res, 'done', { record: fresh });
   } catch (e) {
     SSE(res, 'error', { message: e.message });
   } finally {
@@ -316,12 +327,17 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   const prompt = `${composed}${stage.variant ? `\n${text.STAGES.special.variants[stage.variant].art}.` : ''}\n${NO_TEXT}`;
   const art = await autocrop(await p.generate({ prompt, reference }));
   logCost(provider);
-  store.backupArt(record.id, stage.art);
-  stage.art = store.saveArt(record.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);
+  // Re-read after the await so a concurrent evolve/alter isn't clobbered (lost update).
+  const fresh = store.get(record.id);
+  if (!fresh) return res.status(404).json({ error: 'Not found' });
+  const freshStage = fresh.stages[idx];
+  if (!freshStage) return res.status(404).json({ error: 'Not found' });
+  store.backupArt(fresh.id, freshStage.art);
+  freshStage.art = store.saveArt(fresh.id, `stage-${idx + 1}.${extFor(art.mime)}`, art.data);
   // ponytail: naive continuity note; regenerate description via vision call if drift ever matters
-  if (said) stage.description += ` Recently altered: ${said}.`;
-  store.save(record);
-  res.json(record);
+  if (said) freshStage.description += ` Recently altered: ${said}.`;
+  store.save(fresh);
+  res.json(fresh);
 }));
 
 app.delete('/api/pokemon/:id', (req, res) => {

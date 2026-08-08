@@ -13,7 +13,7 @@ row when done.
 | 002  | Make the on-disk store resilient to Drive stalls  | P1       | M      | -          | DONE   |
 | 004  | Remove dead code + fix README env vars            | P2       | S      | -          | DONE   |
 | 005  | Extract public/app.js pure logic and unit-test it | P2       | M      | -          | DONE   |
-| 003  | Record-update integrity + durable numbering       | P2       | M      | 002, 004   | TODO   |
+| 003  | Record-update integrity + durable numbering       | P2       | M      | 002, 004   | DONE   |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line rationale)
 

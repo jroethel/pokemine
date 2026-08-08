@@ -709,3 +709,62 @@ test('autocrop: trims white padding, re-adds uniform margin, survives junk', asy
   const tiny = { data: Buffer.from('notanimage'), mime: 'image/png' };
   assert.equal(await autocrop(tiny), tiny);
 });
+
+test('api: concurrent evolves do not lose an update (re-read after await)', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const stage = { name: 'Evo', category: 'The Evo Pokemon', types: ['Fire'], hp: 70,
+        flavor: 'f', moves: [{ name: 'Hit', damage: 30, text: 't' }], artPrompt: 'a', description: 'd', backstory: 'b' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const post = (p, b) => fetch(`${base}${p}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b),
+  }).then(parseResponseBody);
+  const mock = getProvider('mock');
+  const realGen = mock.generate;
+
+  try {
+    const created = await post('/api/pokemon', { prompt: 'an evo pokemon', provider: 'mock' }); // 1 stage
+    // Barrier: hold BOTH image generations until both evolve handlers have passed
+    // store.get() and reached the image await, forcing the stale-read interleave.
+    let release, arrived = 0;
+    const gate = new Promise(r => (release = r));
+    mock.generate = async a => { if (++arrived === 2) release(); await gate; return realGen(a); };
+
+    await Promise.all([
+      post(`/api/pokemon/${created.id}/evolve`, { provider: 'mock' }),
+      post(`/api/pokemon/${created.id}/evolve`, { provider: 'mock' }),
+    ]);
+    // Both evolutions must persist: 1 -> 2 -> 3. Without the re-read the second save
+    // clobbers the first and the record is stuck at 2 stages (a lost update).
+    const final = store.get(created.id);
+    assert.equal(final.stages.length, 3);
+    const nums = final.stages.map(s => s.number);
+    assert.equal(new Set(nums).size, nums.length); // collector numbers distinct
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+    mock.generate = realGen;
+  }
+});
+
+test('store: number allocation is not reused when a record is transiently unreadable', () => {
+  const a = store.create({ stages: [{ name: 'Keeper' }] });          // highest dex + collector so far
+  const p = path.join(process.env.DATA_DIR, 'pokemon', a.id, 'pokemon.json');
+  const good = fs.readFileSync(p);
+  fs.writeFileSync(p, '{ transiently corrupt');                      // Drive stall: list() now skips a
+  const b = store.create({ stages: [{ name: 'Newcomer' }] });        // must advance past a, not reuse it
+  fs.writeFileSync(p, good);                                         // Drive settles: a reappears
+  // Monotonic counter => b is strictly above a's numbers regardless of any gaps.
+  // Lossy list() allocation => b <= a's numbers (a, the max, was skipped), so both fail.
+  assert.ok(b.number > a.number, `dex ${b.number} must exceed ${a.number}`);
+  assert.ok(b.stages[0].number > a.stages[0].number, 'collector number must advance');
+  const dex = store.list().map(r => r.number);
+  assert.equal(new Set(dex).size, dex.length, 'dex numbers unique after a reappears');
+});

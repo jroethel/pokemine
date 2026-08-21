@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gen-mirrors.sh - render open GitHub issues into two markdown mirrors.
+# gen-mirrors.sh - render the declared tracker backend's open issues into two markdown mirrors.
 #   <out-dir>/ISSUES.md  - issues with no `idea` label
 #   <out-dir>/BACKLOG.md - issues labeled `idea`
 #   Issues labeled `wayfinder:*` are excluded from both mirrors.
@@ -81,10 +81,12 @@ printf '%s' "$JSON_SRC" | awk '
 ' | sort -t"$TAB" -k2,2nr > "$rows_file" || fail "issue parse/sort failed"
 
 # 3. Write each mirror: disclosed HTML-comment header, H1, then the table.
-SRC_LABEL="GitHub issues"
-if [ "$(scripts/tracker.sh mode get 2>/dev/null || true)" = "local" ]; then
-  SRC_LABEL="docs/issues/ local tracker"
-fi
+MODE="$(scripts/tracker.sh mode get 2>/dev/null || true)"
+case "$MODE" in
+  gitlab) SRC_LABEL="GitLab issues" ;;
+  local)  SRC_LABEL="docs/issues/ local tracker" ;;
+  *)      SRC_LABEL="GitHub issues" ;;
+esac
 write_mirror() {
   local file="$1" h1="$2" want="$3"
   {

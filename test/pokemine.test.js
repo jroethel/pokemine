@@ -66,6 +66,14 @@ test('store: archive moves a pokemon out of list into a hidden archive folder', 
   assert.ok(fs.existsSync(path.join(store.root(), '..', 'archive', rec.id, 'pokemon.json')));
 });
 
+test('store: remove hard-deletes an orphan card dir off disk', () => {
+  const rec = store.create({ backstory: '', stages: [{ name: 'Orphan' }] });
+  assert.ok(fs.existsSync(path.join(store.root(), rec.id, 'pokemon.json')));
+  store.remove(rec.id);
+  assert.ok(!fs.existsSync(path.join(store.root(), rec.id)));
+  assert.ok(!store.list().some(p => p.id === rec.id));
+});
+
 test('store: renameFor follows a stage-0 name edit, sanitizes bad chars, keeps the suffix', () => {
   const rec = store.create({ backstory: '', stages: [{ name: 'Original' }] });
   const suffix = rec.id.slice(rec.id.lastIndexOf('-') + 1);

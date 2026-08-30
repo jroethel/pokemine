@@ -212,6 +212,13 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.set('Connection', 'keep-alive');
 
+  // Kid closed the tab mid-generation: stop before the next expensive step instead
+  // of running to completion and writing to a dead socket.
+  // ponytail: flag only; the in-flight fetch (incl. the 300s bridge poll) isn't
+  // cancelled - thread an AbortSignal into providers if that wait must end early.
+  let aborted = false;
+  res.on('close', () => { if (!res.writableEnded) aborted = true; });
+
   const t0 = Date.now();
   let stage, textMs;
   try {
@@ -224,6 +231,7 @@ app.post('/api/pokemon', wrap(async (req, res) => {
     logGeneration({ provider, t0, textMs, outcome: 'error' });
     return res.end();
   }
+  if (aborted) { logGeneration({ provider, t0, textMs, outcome: 'aborted' }); return res.end(); }
 
   const { artPrompt, ...stageData } = stage;
   let art, outcome = 'ok', warning, imageMs;
@@ -239,13 +247,19 @@ app.post('/api/pokemon', wrap(async (req, res) => {
     outcome = 'art-failed'; warning = 'art-failed';
   }
   imageMs = Date.now() - tImg;
+  if (aborted) { logGeneration({ provider, t0, textMs, imageMs, outcome: 'aborted' }); return res.end(); }
 
   const record = store.create({
     ...(trainer ? { createdBy: trainer } : {}),
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
   });
-  record.stages[0].art = store.saveArt(record.id, `stage-1.${extFor(art.mime)}`, art.data);
-  store.save(record);
+  try {
+    record.stages[0].art = store.saveArt(record.id, `stage-1.${extFor(art.mime)}`, art.data);
+    store.save(record);
+  } catch (e) {
+    store.remove(record.id); // art write failed: delete the orphan card rather than leave one with no image
+    throw e;
+  }
   logGeneration({ id: record.id, provider, t0, textMs, imageMs, outcome });
   SSE(res, 'done', { record, seconds: (Date.now() - t0) / 1000, ...(warning ? { warning } : {}) });
   res.end();

@@ -51,14 +51,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/media', express.static(store.root()));
 app.use('/avatars', express.static(store.trainersRoot()));
 
-// CORS + Private Network Access on the bridge endpoints, so page-context drivers
-// (a script running on gemini.google.com, not just the extension service worker)
-// can fulfill jobs against this LAN server.
+// CORS + Private Network Access on the bridge endpoints, so a page-context driver
+// (a script running on gemini.google.com) can fulfill jobs against this LAN server.
+// Restricted to that one driver origin: a wildcard let any page a family member
+// visits read the child's typed prompts (GET jobs) or forge an image result
+// cross-origin (issue #12). The extension's service-worker fetches bypass CORS via
+// host_permissions, so they need no header and are unaffected by this restriction.
+const BRIDGE_ORIGINS = new Set(['https://gemini.google.com']);
 app.use('/api/bridge', (req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  res.set('Access-Control-Allow-Private-Network', 'true');
+  const origin = req.get('Origin');
+  if (origin && BRIDGE_ORIGINS.has(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Private-Network', 'true');
+  }
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });

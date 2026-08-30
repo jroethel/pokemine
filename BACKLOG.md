@@ -1,5 +1,5 @@
 <!--
-generated: 2026-08-30T15:01:00Z
+generated: 2026-08-30T15:02:07Z
 source of truth: GitHub issues
 regenerate: scripts/gen-mirrors.sh .
 DO NOT EDIT
@@ -8,7 +8,6 @@ DO NOT EDIT
 
 | # | title | labels | updated |
 |---|---|---|---|
-| 13 | DEBT-02: dedupe Gemini candidates[0].content.parts extraction (3 files) | idea | 2026-08-08T03:56:52Z |
 | 11 | Local Stable Diffusion provider | idea | 2026-08-08T02:52:33Z |
 | 10 | Bridge reference-image support v2 | idea | 2026-08-08T02:52:32Z |
 | 9 | Pokedex-book view | idea | 2026-08-08T02:52:31Z |
@@ -16,5 +15,3 @@ DO NOT EDIT
 | 6 | Live Pokédex data integration (pokeapi / pokedex-mcp) | idea | 2026-08-08T02:22:00Z |
 | 5 | Next.js migration (deferred reference) | idea | 2026-08-08T02:20:17Z |
 | 4 | Watch bridge image-detection heuristic; Playwright-over-CDP fallback | idea | 2026-08-08T02:20:16Z |
-| 3 | Clean up orphan cards on disk error in store.create | idea | 2026-08-08T02:20:15Z |
-| 2 | SSE create route: handle client abort | idea | 2026-08-08T02:20:14Z |

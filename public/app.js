@@ -366,7 +366,9 @@ async function viewCard(id, stageIdx) {
   $('#release').onclick = async () => {
     const name = rec.stages[idx].name;
     if (!confirm(`Release ${name} into the wild? (Dad can rescue them from the archive.)`)) return;
-    await api(`/pokemon/${rec.id}`, { method: 'DELETE' }).catch(e => alert(e.message));
+    try {
+      await api(`/pokemon/${rec.id}`, { method: 'DELETE' });
+    } catch (e) { showError(e.message); return; }
     location.hash = '#dex';
   };
 
@@ -398,8 +400,11 @@ async function viewCard(id, stageIdx) {
       } else {
         body[field] = value;
       }
-      const updated = await api(`/pokemon/${rec.id}`, { method: 'PATCH', body }).catch(e => alert(e.message));
-      if (updated && updated.id !== rec.id) location.hash = `#card/${updated.id}/${idx}`; // dir renamed to follow the stage-0 name
+      let updated;
+      try {
+        updated = await api(`/pokemon/${rec.id}`, { method: 'PATCH', body });
+      } catch (e) { showError(e.message); return; }
+      if (updated.id !== rec.id) location.hash = `#card/${updated.id}/${idx}`; // dir renamed to follow the stage-0 name
     };
   });
 }
@@ -497,7 +502,9 @@ async function loadMarquee(trainers) {
   };
   $('#archive-trainer').onclick = async () => {
     if (!confirm(`Send ${p.name} off to Team Rocket? (Dad can always rescue them back.)`)) return;
-    await api(`/trainers/${t.slug}/archive`, { method: 'POST' }).catch(e => alert(e.message));
+    try {
+      await api(`/trainers/${t.slug}/archive`, { method: 'POST' });
+    } catch (e) { showError(e.message); return; }
     if (localStorage.trainer === p.name) { clearTrainer(); updateTrainerChip(); }
     viewTrainers(); // refresh the grid without the archived trainer
   };

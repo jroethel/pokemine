@@ -276,6 +276,19 @@ do_list() {                   # the list verb's backend dispatch; next-eligible 
     *)      fail "unknown tracker mode '$mode' in $RS (expected github, gitlab, or local)" ;;
   esac
 }
+do_children() {                # arg: map issue number -> gh-shaped sub-issue-JSON array (number,title,state,labels,body)
+  local num="$1" mode
+  mode="$(tracker_mode_get)" || fail "no tracker mode declared in $RS (run loop-setup)"
+  case "$mode" in
+    github) gh_guard
+            gh api "repos/{owner}/{repo}/issues/$num/sub_issues" \
+              --jq '[.[] | {number, title, state, labels, body}]' \
+              || fail "gh api sub_issues failed for #$num" ;;
+    gitlab) fail "children: gitlab sub-issues not yet supported" ;;
+    local)  fail "children: local tracker has no sub-issue concept" ;;
+    *)      fail "unknown tracker mode '$mode' in $RS (expected github, gitlab, or local)" ;;
+  esac
+}
 fetch_body() {                # arg: num -> only that candidate's body (the blocker scan is candidate-scoped)
   local num="$1" mode f
   mode="$(tracker_mode_get)" || fail "no tracker mode declared in $RS (run loop-setup)"
@@ -375,6 +388,7 @@ Usage: tracker.sh <command> [args]
   host                           print the GitLab host derived from origin
   group                          print the first path segment of origin (the backlog group)
   list                           print a gh-shaped issue-JSON array for open issues
+  children <num>                 print a gh-shaped sub-issue-JSON array for a wayfinder map's children (github only)
   create --label L --title T --body B   create an issue, print its number
   close <num>                    close an issue by number (human-only; agents complete via 'done')
   reopen <num>                   reopen an issue by number
@@ -403,6 +417,10 @@ case "$sub" in
     ;;
   list)
     do_list
+    ;;
+  children)
+    [ $# -eq 1 ] || fail "children: requires <num>"
+    do_children "$1"
     ;;
   create)
     label=""; title=""; body=""

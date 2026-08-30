@@ -3,6 +3,7 @@ nano-api.md
 data/
 test-image.png
 node_modules/
+*.swp
 docs/reference/notebook-cache/
 e2e-artifacts/
 resources/**/*.jpg

@@ -413,6 +413,17 @@ app.delete('/api/pokemon/:id/stage/:idx', (req, res) => {
   res.json(store.deleteLastStage(req.params.id));
 });
 
+// Ask the Professor: a kid-facing feature-request box. Appends to a local markdown file
+// (DATA_DIR/suggestions.md, gitignored) for Dad to read - no GitHub/email side effect.
+app.post('/api/suggestions', (req, res) => {
+  const idea = (req.body.idea || '').trim();
+  if (!idea) return res.status(400).json({ error: 'Type an idea first!' });
+  const trainer = (req.body.trainer || '').trim();
+  const entry = `## ${new Date().toISOString()}${trainer ? ` - ${trainer}` : ''}\n${idea}\n\n`;
+  fs.appendFileSync(path.resolve(DATA_DIR, 'suggestions.md'), entry);
+  res.json({ ok: true });
+});
+
 app.patch('/api/pokemon/:id', wrap(async (req, res) => {
   const { stage: stageIndex = 0, backstory, ...fields } = req.body;
   const record = store.get(req.params.id);

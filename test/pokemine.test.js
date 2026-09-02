@@ -713,6 +713,28 @@ test('api: cost ledger tracks session and persists all-time', async () => {
   }
 });
 
+test('api: suggestions (Ask the Professor) appends to a local markdown file', async () => {
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const call = (p, body) => fetch(`${base}${p}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
+
+  try {
+    let r = await call('/api/suggestions', { idea: '   ' });
+    assert.equal(r.status, 400);
+
+    r = await call('/api/suggestions', { idea: 'more Pokemon types please', trainer: 'Max Power' });
+    assert.equal(r.status, 200);
+    const md = fs.readFileSync(path.join(process.env.DATA_DIR, 'suggestions.md'), 'utf8');
+    assert.match(md, /Max Power/);
+    assert.match(md, /more Pokemon types please/);
+  } finally {
+    srv.close();
+  }
+});
+
 test('api: bridge create fulfilled by an HTTP-driver loop', async () => {
   process.env.BRIDGE_POLL_MS = '40';
   const realFetch = global.fetch;

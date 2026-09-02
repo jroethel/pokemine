@@ -628,6 +628,31 @@ async function viewPrint() {
     el.removeAttribute('contenteditable'));
 }
 
+async function viewSuggest() {
+  $('#view').innerHTML = `
+    <div class="create">
+      <div class="create-stage lattice">
+        <img class="create-logo" src="logo.jpg" alt="Pokemine">
+        <p class="create-tag">Got an idea for the lab? Tell the Professor.</p>
+      </div>
+      <div class="create-body">
+        <textarea id="suggestion" rows="4" placeholder="A new Pokemon type... a way to trade cards..."></textarea>
+        <button id="suggest-send" class="big">Send it!</button>
+        <p id="suggest-thanks" class="hidden"></p>
+      </div>
+    </div>`;
+  $('#suggest-send').onclick = async () => {
+    const idea = $('#suggestion').value;
+    if (!idea.trim()) return;
+    try {
+      await api('/suggestions', { method: 'POST', body: { idea, trainer: localStorage.trainer || '' } });
+      $('#suggestion').value = '';
+      $('#suggest-thanks').textContent = 'Sent! The Professor will take a look.';
+      $('#suggest-thanks').classList.remove('hidden');
+    } catch (e) { showError(e.message); }
+  };
+}
+
 // ---------- router ----------
 
 async function route() {
@@ -642,6 +667,7 @@ async function route() {
     if (view === 'card' && id) return await viewCard(id, extra === undefined ? undefined : +extra);
     if (view === 'dex') return await viewDex();
     if (view === 'print') return await viewPrint();
+    if (view === 'suggest') return await viewSuggest();
     return viewCreate();
   } catch (e) {
     $('#view').innerHTML = `<h1>Uh oh!</h1><p>${esc(e.message)}</p>`;

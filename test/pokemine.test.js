@@ -420,6 +420,28 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     assert.match(r.body.error, /fully evolved/i);
     assert.equal(store.get(rec.id).stages.length, 3);
 
+    // delete stage: only the most recent stage may go, earlier stages stay untouched
+    r = await call(`/api/pokemon/${rec.id}/stage/0`, 'DELETE');
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /most recent/i);
+    assert.equal(store.get(rec.id).stages.length, 3); // untouched
+
+    r = await call(`/api/pokemon/${rec.id}/stage/2`, 'DELETE');
+    assert.equal(r.status, 200);
+    assert.equal(r.body.stages.length, 2);
+    assert.equal(r.body.stages[1].name, 'Gyattzilla'); // stage 1 (evolution) survives
+    assert.ok(!fs.existsSync(path.join(process.env.DATA_DIR, 'pokemon', rec.id, 'stage-3.png'))); // art cleaned up
+
+    r = await call(`/api/pokemon/${rec.id}/stage/1`, 'DELETE');
+    assert.equal(r.status, 200);
+    assert.equal(r.body.stages.length, 1);
+    assert.equal(r.body.stages[0].name, 'Gyatt'); // back to the basic stage
+
+    r = await call(`/api/pokemon/${rec.id}/stage/0`, 'DELETE'); // can't delete the only stage
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /release it into the wild/i);
+    assert.equal(store.get(rec.id).stages.length, 1);
+
     r = await call(`/api/pokemon/${rec.id}/alter`, 'POST', { instruction: 'angrier', stage: 0, provider: 'mock' });
     assert.ok(store.readArt(rec.id, 'stage-1.v1.png').length > 0);
     assert.match(r.body.stages[0].description, /angrier/);

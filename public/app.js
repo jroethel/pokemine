@@ -352,6 +352,8 @@ async function viewCard(id, stageIdx) {
           ${bornFrom ? `<div class="born-from">Born from: "${esc(bornFrom)}"
             <button id="use-origin" class="link-btn">use it</button></div>` : ''}
           ${rec.createdBy ? `<div class="born-from byline">by ${esc(rec.createdBy)} on ${friendlyDate(rec.createdAt)}</div>` : ''}
+          ${idx === rec.stages.length - 1 && rec.stages.length > 1
+            ? '<button id="delete-stage" class="release no-print">Delete this evolution</button>' : ''}
           <button id="release" class="release no-print">Release into the wild</button>
         </div>
       </div>
@@ -408,6 +410,16 @@ async function viewCard(id, stageIdx) {
       await api(`/pokemon/${rec.id}`, { method: 'DELETE' });
     } catch (e) { showError(e.message); return; }
     location.hash = '#dex';
+  };
+
+  const deleteStageBtn = $('#delete-stage'); // only rendered on the most recent stage of a multi-stage line
+  if (deleteStageBtn) deleteStageBtn.onclick = async () => {
+    const name = rec.stages[idx].name;
+    if (!confirm(`Delete this evolution (${name})? Earlier stages stay.`)) return;
+    try {
+      await api(`/pokemon/${rec.id}/stage/${idx}`, { method: 'DELETE' });
+    } catch (e) { showError(e.message); return; }
+    location.hash = `#card/${rec.id}/${idx - 1}`;
   };
 
   $('#alter').onclick = async () => {

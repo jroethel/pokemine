@@ -403,6 +403,16 @@ app.delete('/api/pokemon/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// Undo the most recent evolution instead of releasing the whole line. Only the last
+// stage may go: dropping a middle stage would orphan later stages' art/text continuity.
+app.delete('/api/pokemon/:id/stage/:idx', (req, res) => {
+  const record = store.get(req.params.id);
+  if (!record) return res.status(404).json({ error: 'Not found' });
+  if (record.stages.length <= 1) return res.status(400).json({ error: 'Release it into the wild to delete the only stage.' });
+  if (+req.params.idx !== record.stages.length - 1) return res.status(400).json({ error: 'Only the most recent stage can be deleted.' });
+  res.json(store.deleteLastStage(req.params.id));
+});
+
 app.patch('/api/pokemon/:id', wrap(async (req, res) => {
   const { stage: stageIndex = 0, backstory, ...fields } = req.body;
   const record = store.get(req.params.id);

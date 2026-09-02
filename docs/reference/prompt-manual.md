@@ -1,7 +1,7 @@
 # Pokemine Prompt Manual
 
 Every prompt sent to a text model or an image model, how it is assembled, and which knob changes what.
-As of 2026-07-25. Companion to [architecture.md](architecture.md).
+As of 2026-08-30 (verified against source). Companion to [architecture.md](architecture.md).
 
 The goal here is that when you want to tweak *something the model says or draws*, you can find the exact string,
 know what feeds into it, and know what else re-uses it before you change it.
@@ -169,12 +169,14 @@ Do not write the creature's name or any text, letters, numbers, logos, or waterm
 
 **Variant art phrases** (`STAGES.special.variants[tier].art`) - appended when a stage is/was a special:
 
-| Tier | Art phrase                                                                                          |
-|------|-----------------------------------------------------------------------------------------------------|
-| VMAX | crackling electric-blue energy, radiant silver aura, sparks flying                                  |
-| EX   | wreathed in golden fire, glowing prismatic divine radiance                                          |
-| Mega | colossal mega-evolved form, swirling cosmic nebula background emphasizing scale, rainbow prismatic  |
-|      | aura, glowing mega stone on its brow                                                                |
+| Tier | Art phrase                                                                               |
+|------|------------------------------------------------------------------------------------------|
+| VMAX | crackling electric-blue energy, radiant silver aura, sparks flying, dynamic stadium      |
+|      | background with storm-lit clouds and lightning                                           |
+| EX   | wreathed in golden fire, glowing prismatic divine radiance, radiant sunburst temple      |
+|      | background                                                                               |
+| Mega | colossal mega-evolved form, swirling cosmic nebula background that emphasizes the huge   |
+|      | scale of it, rainbow prismatic aura, glowing mega stone on its brow                      |
 
 **`withContinuity(provider, prompt, description)`** (`lib/providers.js`) - if the provider has no reference-image
 support and a description exists, appends `\nThe creature looks like this: <description>`. Otherwise returns the
@@ -273,6 +275,6 @@ plain white background. Do not write any text, letters, numbers, logos, or water
 | The no-text / watermark rule                 | `ART_STYLE` (create) and `NO_TEXT` (evolve/alter)               |
 | Whether continuity uses image vs description | Provider's `supportsReference` flag in `lib/providers.js`       |
 
-**Odds note:** `STAGES.special.odds` currently sums to **0.30** (VMAX 0.12 + EX 0.10 + Mega 0.08), so ~30% of final
-evolutions become special - even though the code comments still say 5% / 20%. Decide the real target rarity before
+**Odds note:** `STAGES.special.odds` currently sums to **0.35** (VMAX 0.15 + EX 0.12 + Mega 0.08), so ~35% of final
+evolutions become special. Decide the real target rarity before
 adding lanes, since every new lane you add here changes the total. Specials only roll when evolving **into stage 3**.

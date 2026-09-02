@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokemine Prompt Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand-yellow: #ffcb05;
+    --brand-blue: #2a75bb;
+    --brand-navy: #3c5aa6;
+    --poke-red: #ff0000;
+    --poke-red-deep: #cc0000;
+
+    --ink: #1b2a4a;
+    --surface: #ffffff;
+    --bg: #eaf1fd;
+
+    --gold-lite: #f9e79f;
+    --gold: #d8b13f;
+    --gold-deep: #8a6a1c;
+    --parchment: #fffdf4;
+    --parchment-deep: #f4e7c9;
+    --card-ink: #22201a;
+
+    --display: "Luckiest Guy", "Arial Rounded MT Bold", "Arial Black", Impact, system-ui, sans-serif;
+    --body: -apple-system, "Segoe UI", Verdana, sans-serif;
+    --mono: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+
+    /* leverage-point accent (a "knob" you can turn) */
+    --knob: #1e9e6a;
+    --knob-lite: #d6f5e6;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; font-family: var(--body); color: var(--ink); line-height: 1.55;
+    background: linear-gradient(rgba(234,241,253,.92), rgba(234,241,253,.92));
+    background-color: var(--bg);
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.2rem 5rem; }
+
+  /* ---- hero ---- */
+  header.hero {
+    background-color: var(--poke-red-deep);
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.5) 0 2px, transparent 2px 46px);
+    border-bottom: 5px solid var(--brand-yellow);
+    padding: 2.6rem 1.2rem 2.2rem;
+    text-align: center;
+  }
+  header.hero h1 {
+    font-family: var(--display); font-weight: 400; margin: 0;
+    font-size: clamp(2.2rem, 6vw, 3.8rem); letter-spacing: 1px; line-height: 1;
+    color: var(--brand-yellow);
+    -webkit-text-stroke: 2.5px var(--brand-navy); paint-order: stroke fill;
+    text-shadow: 0 3px 0 var(--brand-navy), 0 6px 8px rgba(0,0,0,.28);
+  }
+  header.hero p { color: #fff; margin: .8rem auto 0; max-width: 640px; font-size: 1.02rem; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  header.hero .stamp { display: inline-block; margin-top: 1rem; font-size: .8rem; font-weight: 700;
+    background: var(--brand-yellow); color: var(--card-ink); padding: .25rem .7rem; border-radius: 999px; box-shadow: 0 2px 0 var(--gold-deep); }
+
+  /* ---- section chrome ---- */
+  h2 { font-family: var(--display); font-weight: 400; color: var(--brand-blue);
+    font-size: 1.9rem; letter-spacing: .5px; margin: 2.6rem 0 .3rem;
+    border-bottom: 3px dotted var(--brand-navy); padding-bottom: .3rem; }
+  h3 { font-family: var(--display); font-weight: 400; color: var(--brand-navy);
+    font-size: 1.28rem; letter-spacing: .4px; margin: 1.8rem 0 .4rem; }
+  h2 .tag, h3 .tag { font-family: var(--mono); font-size: .62em; color: var(--brand-blue); background: #fff;
+    border: 2px solid var(--brand-blue); border-radius: 6px; padding: 0 .35em; vertical-align: middle; margin-right: .4em; }
+  a { color: var(--brand-blue); }
+
+  code { font-family: var(--mono); font-size: .88em; background: #fff; border: 1px solid #cdd9ef;
+    border-radius: 5px; padding: .05em .35em; color: #1a3a63; }
+
+  pre { background: var(--parchment); border: 2px solid var(--gold);
+    border-left: 7px solid var(--gold); border-radius: 8px; color: var(--card-ink);
+    padding: .9rem 1rem; overflow-x: auto; font-family: var(--mono); font-size: .84rem; line-height: 1.5;
+    box-shadow: 0 2px 6px rgba(138,106,28,.18); }
+  pre code { background: none; border: 0; padding: 0; color: inherit; font-size: 1em; }
+  pre .ins { background: var(--knob-lite); color: #0c5c3c; border-radius: 3px; padding: 0 .15em; font-weight: 700; }
+  pre .cond { color: #8a6a1c; font-style: italic; }
+
+  /* leverage-point chip */
+  .knob { display: inline-block; font-family: var(--mono); font-size: .78rem; font-weight: 700;
+    background: var(--knob-lite); color: #0c5c3c; border: 1.5px solid var(--knob);
+    border-radius: 999px; padding: .08em .6em; white-space: nowrap; }
+  .knob::before { content: "\1F39B\FE0E  "; }
+
+  .lead { font-size: 1.05rem; max-width: 760px; }
+
+  table { border-collapse: collapse; width: 100%; margin: .8rem 0 1.2rem; font-size: .92rem; background: #fff;
+    box-shadow: 0 2px 8px rgba(60,90,166,.12); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid #dbe5f7; vertical-align: top; }
+  th { background: var(--brand-navy); color: #fff; font-family: var(--display); font-weight: 400; letter-spacing: .4px; }
+  tr:nth-child(even) td { background: #f5f8ff; }
+  td code { font-size: .82em; }
+
+  .note { background: #fff8dd; border: 1px solid var(--gold); border-left: 6px solid var(--gold);
+    border-radius: 6px; padding: .7rem .9rem; margin: 1rem 0; font-size: .95rem; }
+  .note strong { color: var(--gold-deep); }
+
+  /* ---- flow diagram ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: .8rem 1.4rem; align-items: center; margin: 1rem 0 1.6rem;
+    background: #fff; border: 2px solid #cdd9ef; border-radius: 10px; padding: .9rem 1.1rem; }
+  .legend .item { display: flex; align-items: center; gap: .5rem; font-size: .9rem; }
+  .swatch { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; }
+
+  .flow { display: grid; gap: .8rem; }
+  .lane { background: #fff; border: 2px solid var(--brand-navy); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 3px 10px rgba(60,90,166,.16); }
+  .lane > .lane-head { background: var(--brand-blue); color: #fff; font-family: var(--display); font-weight: 400;
+    letter-spacing: .5px; padding: .5rem .9rem; font-size: 1.05rem; display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
+  .lane > .lane-head .route { font-family: var(--mono); font-size: .74rem; opacity: .92; font-weight: 400; }
+  .lane-body { padding: 1rem; display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: .6rem; }
+  @media (max-width: 720px) { .lane-body { grid-template-columns: 1fr; } .arrow { transform: rotate(90deg); } }
+
+  .stage { border-radius: 10px; padding: .7rem .8rem; display: flex; flex-direction: column; gap: .45rem; }
+  .stage.text { background: #eef4ff; border: 2px solid var(--brand-blue); }
+  .stage.image { background: var(--parchment-deep); border: 2px solid var(--gold); }
+  .stage .st-title { font-family: var(--display); font-weight: 400; letter-spacing: .4px; font-size: .98rem; }
+  .stage.text .st-title { color: var(--brand-navy); }
+  .stage.image .st-title { color: var(--gold-deep); }
+  .stage .src { font-family: var(--mono); font-size: .72rem; color: #556; }
+  .stage ul { margin: .1rem 0 0; padding-left: 1.05rem; font-size: .86rem; }
+  .stage li { margin: .12rem 0; }
+
+  .arrow { align-self: center; font-size: 1.7rem; color: var(--brand-navy); font-weight: 900; padding: 0 .2rem; }
+
+  .injects { margin-top: .5rem; display: flex; flex-wrap: wrap; gap: .4rem; }
+  .injects .knob { font-size: .72rem; }
+
+  .provider-row { margin-top: .9rem; background: #fff; border: 2px dashed var(--brand-navy); border-radius: 12px; padding: .9rem 1rem; }
+  .provider-row h4 { margin: 0 0 .5rem; font-family: var(--display); font-weight: 400; color: var(--brand-navy); letter-spacing: .4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip { font-size: .82rem; border-radius: 999px; padding: .18em .7em; border: 2px solid; font-weight: 700; }
+  .chip.ref { background: #e7f7ee; border-color: var(--knob); color: #0c5c3c; }
+  .chip.noref { background: #fdeceb; border-color: var(--poke-red-deep); color: #9a1b16; }
+
+  /* variant accents matching the app */
+  .v { font-family: var(--mono); font-weight: 700; font-size: .82rem; border-radius: 5px; padding: .05em .4em; }
+  .v.vmax { background: linear-gradient(#f2f5fa, #aab4c6); color: #23304e; }
+  .v.ex { background: linear-gradient(#ffe08a, #e09a12); color: #4a3305; }
+  .v.mega { background: linear-gradient(#caa8ff, #7a3bd0); color: #fff; }
+
+  /* ---- recipe cards ---- */
+  .recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .9rem; margin-top: 1rem; }
+  .recipe { background: #fff; border: 2px solid #cdd9ef; border-left: 7px solid var(--knob); border-radius: 10px;
+    padding: .85rem 1rem; box-shadow: 0 2px 7px rgba(60,90,166,.1); }
+  .recipe h4 { margin: 0 0 .45rem; font-size: 1rem; color: var(--ink); }
+  .recipe h4 em { color: var(--brand-blue); font-style: normal; font-weight: 800; }
+  .recipe p { margin: .35rem 0; font-size: .9rem; }
+  .recipe .edit { font-family: var(--mono); font-size: .82rem; }
+  .recipe .where { display: inline-block; margin-top: .4rem; font-size: .76rem; font-weight: 700; color: var(--gold-deep);
+    background: var(--parchment-deep); border-radius: 5px; padding: .1em .5em; }
+
+  footer { text-align: center; color: #6677a0; font-size: .85rem; margin-top: 3rem; }
+
+  /* sticky mini-nav */
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(42,117,187,.96); backdrop-filter: blur(4px);
+    display: flex; flex-wrap: wrap; gap: .2rem 1rem; justify-content: center; padding: .55rem 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+  nav.toc a { color: #fff; text-decoration: none; font-weight: 700; font-size: .9rem; }
+  nav.toc a:hover { color: var(--brand-yellow); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Pokemine Prompt Manual</h1>
+  <p>Every prompt sent to a text model or an image model, how it is assembled, and which knob changes what.</p>
+  <span class="stamp">Verified against source &middot; 2026-08-30</span>
+</header>
+
+<nav class="toc">
+  <a href="#flow">Flow</a>
+  <a href="#text">Text prompts</a>
+  <a href="#image">Image prompts</a>
+  <a href="#quick">Quick reference</a>
+  <a href="#recipes">If you'd like to&hellip;</a>
+</nav>
+
+<div class="wrap">
+
+  <p class="lead" style="margin-top:1.8rem;">
+    The goal: when you want to tweak <em>something the model says or draws</em>, find the exact string, know what
+    feeds into it, and know what else re-uses it before you change it. Companion to
+    <a href="architecture.md">architecture.md</a>. There are exactly two families &ndash; <strong>text prompts</strong>
+    (all in <code>lib/text.js</code>, each returns a JSON blob) and <strong>image prompts</strong> (assembled in
+    <code>server.js</code>, one image out).
+  </p>
+
+  <div class="note">
+    <span class="knob">leverage / injection point</span> marks a spot where kid input flows in, or a constant you can
+    turn to change every generation. The green chips below and in the diagram are the same idea: <strong>these are the
+    knobs.</strong> Everything else is plumbing.
+  </div>
+
+  <!-- ================= FLOW ================= -->
+  <h2 id="flow">The flow, end to end</h2>
+  <p>Every button a kid presses runs the same two-beat pipeline: a <strong>text call</strong> that returns a JSON
+    creature (or trainer dossier), then an <strong>image call</strong> that draws it. The green chips are where you
+    steer the result.</p>
+
+  <div class="legend">
+    <div class="item"><span class="swatch" style="background:#eef4ff;border:2px solid var(--brand-blue);"></span> Text stage <code>lib/text.js</code></div>
+    <div class="item"><span class="swatch" style="background:var(--parchment-deep);border:2px solid var(--gold);"></span> Image stage <code>server.js</code></div>
+    <div class="item"><span class="knob">knob</span> = leverage / injection point</div>
+    <div class="item"><span class="chip ref" style="padding:.05em .55em;">reference-capable</span> vs <span class="chip noref" style="padding:.05em .55em;">description-only</span> provider</div>
+  </div>
+
+  <div class="flow">
+
+    <!-- CREATE -->
+    <div class="lane">
+      <div class="lane-head"><span>Create &ndash; a brand-new Pokemon</span><span class="route">POST /api/pokemon</span></div>
+      <div class="lane-body">
+        <div class="stage text">
+          <div class="st-title">1. Text: invent stage 1</div>
+          <div class="src">text.newPokemon &rarr; callJSON</div>
+          <ul>
+            <li>System = <code>SYSTEM</code> + canon</li>
+            <li>User = kid's idea + <code>stageShape(1,null)</code></li>
+            <li><code>clampStage</code> forces HP/dmg bands</li>
+          </ul>
+          <div class="injects">
+            <span class="knob">kid prompt</span><span class="knob">SYSTEM</span><span class="knob">CANON_FILE</span><span class="knob">STAGES.hp/dmg[1]</span>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage image">
+          <div class="st-title">2. Image: draw it</div>
+          <div class="src">getProvider(&hellip;).generate</div>
+          <ul>
+            <li><code>withContinuity</code>(no-op on create)</li>
+            <li>+ "The kid asked for: &lt;prompt&gt;."</li>
+            <li>artPrompt already ends with <code>ART_STYLE</code></li>
+          </ul>
+          <div class="injects">
+            <span class="knob">artPrompt</span><span class="knob">ART_STYLE</span><span class="knob">kid prompt (restated)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVOLVE -->
+    <div class="lane">
+      <div class="lane-head"><span>Evolve &ndash; the next stage (richest prompt)</span><span class="route">POST /api/pokemon/:id/evolve</span></div>
+      <div class="lane-body">
+        <div class="stage text">
+          <div class="st-title">1. Text: invent next stage</div>
+          <div class="src">text.evolvedStage &rarr; callJSON</div>
+          <ul>
+            <li>Prev stage injected as JSON (stay on-species)</li>
+            <li><code>rollSpecial(3)</code> &rarr; <span class="v vmax">VMAX</span> <span class="v ex">EX</span> <span class="v mega">MEGA</span> band</li>
+            <li>Optional guidance line; prevHp forces "higher"</li>
+          </ul>
+          <div class="injects">
+            <span class="knob">guidance</span><span class="knob">STAGES.special.odds</span><span class="knob">STAGES bands</span><span class="knob">prev JSON context</span>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage image">
+          <div class="st-title">2. Image: draw evolution</div>
+          <div class="src">getProvider(&hellip;).generate</div>
+          <ul>
+            <li>"Evolve this creature&hellip;" + artPrompt</li>
+            <li>+ variant art phrase (on a special)</li>
+            <li>+ guidance, + <code>NO_TEXT</code></li>
+            <li>Prev image attached if provider supports it</li>
+          </ul>
+          <div class="injects">
+            <span class="knob">withContinuity</span><span class="knob">variant art</span><span class="knob">NO_TEXT</span><span class="knob">reference image</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALTER -->
+    <div class="lane">
+      <div class="lane-head"><span>Alter / Redraw &ndash; re-draw one stage (most conditional)</span><span class="route">POST /api/pokemon/:id/alter</span></div>
+      <div class="lane-body">
+        <div class="stage text" style="background:#f3f0ff;border-color:#7a5bd0;">
+          <div class="st-title" style="color:#5a3bb0;">no new text call</div>
+          <div class="src">reuses stored stage data</div>
+          <ul>
+            <li>Instruction typed &rarr; that becomes the base clause</li>
+            <li>Blank &rarr; "Draw this creature fresh" (stage-0 uses kid's words, later stages the description)</li>
+          </ul>
+          <div class="injects"><span class="knob">instruction</span></div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage image">
+          <div class="st-title">Image: redraw</div>
+          <div class="src">getProvider(&hellip;).generate</div>
+          <ul>
+            <li>+ description (only if no reference &amp; not already in base)</li>
+            <li>+ variant art phrase (keeps a foil's look)</li>
+            <li>+ <code>NO_TEXT</code>; reference used unless art is the mock placeholder</li>
+            <li>Side effect: an instructed alter appends <code>Recently altered: &hellip;</code> to the description</li>
+          </ul>
+          <div class="injects"><span class="knob">description</span><span class="knob">variant art</span><span class="knob">reference image</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRAINER -->
+    <div class="lane">
+      <div class="lane-head"><span>Trainer &ndash; a dossier, not a creature</span><span class="route">POST /api/trainers</span></div>
+      <div class="lane-body">
+        <div class="stage text">
+          <div class="st-title">Text: trainer profile</div>
+          <div class="src">text.trainerBackstory (parallel to art)</div>
+          <ul>
+            <li>Finisher constrained to <code>FINISHER_MOVES</code></li>
+            <li>Favorite Pokemon must canonically use it</li>
+            <li>Lore is best-effort; never fails trainer creation</li>
+          </ul>
+          <div class="injects"><span class="knob">name / description</span><span class="knob">FINISHER_MOVES</span></div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="stage image">
+          <div class="st-title">Image: avatar portrait</div>
+          <div class="src">getProvider(&hellip;).generate</div>
+          <ul>
+            <li>Fixed "Pokemon trainer portrait: &lt;description&gt;&hellip;" prompt</li>
+            <li>Ken Sugimori style, plain white background, no text</li>
+          </ul>
+          <div class="injects"><span class="knob">description</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROVIDER LAYER -->
+    <div class="provider-row">
+      <h4>Continuity fork &ndash; the provider decides how a later stage stays on-model</h4>
+      <p style="margin:.2rem 0 .6rem; font-size:.9rem;">Both evolve and alter branch here. Reference-capable providers get the <em>actual previous image</em> attached; the rest fall back to <code>withContinuity</code> injecting the saved text description.</p>
+      <div class="chips">
+        <span class="chip ref">gemini &middot; reference image</span>
+        <span class="chip ref">mock &middot; reference image</span>
+        <span class="chip noref">zai &middot; description only</span>
+        <span class="chip noref">bridge &middot; description only</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= TEXT ================= -->
+  <h2 id="text">Part A &ndash; Text prompts <span class="tag">lib/text.js</span></h2>
+  <p>Every text call is <code>{ system, user }</code> &rarr; a raw string that must parse as JSON (<code>callJSON</code>,
+    3 attempts). The <strong>system</strong> prompt is shared by all four calls; the <strong>user</strong> prompt is
+    what differs per flow.</p>
+
+  <h3>A0. The shared system prompt <span class="tag">every call</span></h3>
+  <p>Source: <code>SYSTEM</code> + <code>buildSystem()</code>.</p>
+<pre><code>You invent silly Pokemon-style creatures for a kid aged 12-14.
+Humor: silly and gross-out humor is great. Keep everything PG and kind, but add a degree of cinematic realism.
+Always answer with pure JSON only, no markdown fences.</code></pre>
+  <p>If env <code>CANON_FILE</code> points at a file, its contents are appended as <code>## Universe canon\n&lt;file&gt;</code>.</p>
+  <p><strong>Tweak points:</strong> age band, humor, tone &ndash; edit <code>SYSTEM</code>. House lore that colors
+    <em>every</em> generation &ndash; put it in <code>CANON_FILE</code>, don't inline it.
+    <span class="knob">SYSTEM</span> <span class="knob">CANON_FILE</span></p>
+
+  <h3>A1. The stage schema <span class="tag">stageShape() &middot; Create + Evolve</span></h3>
+  <p>Both Create and Evolve end with <code>Reply with JSON: &lt;stageShape(&hellip;)&gt;</code>. The only things that
+    change between calls are the two number ranges (HP band, damage band), from the stage number or the variant's band.</p>
+  <table>
+    <tr><th>Field</th><th>Instruction summary</th></tr>
+    <tr><td><code>name</code></td><td>Use the kid's name idea if given; punny portmanteau of a trait + animal/object word. For evolutions, keep the root word and escalate the modifier.</td></tr>
+    <tr><td><code>category</code></td><td>"The X Pokemon".</td></tr>
+    <tr><td><code>types</code></td><td>1&ndash;2 of the 18 canon types (listed inline).</td></tr>
+    <tr><td><code>hp</code></td><td>In the band, multiple of 10. Band depends on stage/variant (below).</td></tr>
+    <tr><td><code>flavor</code></td><td>One silly Pokedex sentence.</td></tr>
+    <tr><td><code>moves</code></td><td>Exactly 2, each <code>{name, damage, text}</code>; damage in the band, multiple of 10.</td></tr>
+    <tr><td><code>artPrompt</code></td><td>Detailed visual prompt for the image model. <strong>Must end with the shared <code>ART_STYLE</code>.</strong></td></tr>
+    <tr><td><code>description</code></td><td>Compact visual description (colors, shapes, features) for reuse in later prompts.</td></tr>
+    <tr><td><code>backstory</code></td><td>3&ndash;5 sentence funny origin; ground it like a half-forgotten folk legend when it fits.</td></tr>
+  </table>
+
+  <p>The HP and damage bands are the whole numeric variant system:</p>
+  <table>
+    <tr><th>Context</th><th>HP band</th><th>Damage band</th><th>Source</th></tr>
+    <tr><td>Stage 1 (Basic)</td><td>30 &ndash; 120</td><td>10 &ndash; 60</td><td><code>STAGES.hp[1]</code>, <code>.dmg[1]</code></td></tr>
+    <tr><td>Stage 2</td><td>60 &ndash; 160</td><td>30 &ndash; 120</td><td><code>STAGES.hp[2]</code>, <code>.dmg[2]</code></td></tr>
+    <tr><td>Stage 3 (normal)</td><td>90 &ndash; 200</td><td>60 &ndash; 200</td><td><code>STAGES.hp[3]</code>, <code>.dmg[3]</code></td></tr>
+    <tr><td>Stage 3 <span class="v vmax">VMAX</span></td><td>220 &ndash; 260</td><td>220 &ndash; 260</td><td rowspan="3"><code>STAGES.special.variants</code></td></tr>
+    <tr><td>Stage 3 <span class="v ex">EX</span></td><td>240 &ndash; 300</td><td>240 &ndash; 300</td></tr>
+    <tr><td>Stage 3 <span class="v mega">MEGA</span></td><td>260 &ndash; 340</td><td>260 &ndash; 340</td></tr>
+  </table>
+  <div class="note"><strong>Important:</strong> the prompt only <em>asks</em> for numbers in these bands.
+    <code>clampStage()</code> then <strong>forces</strong> them in code (rounds to tens, clamps to the band, makes each
+    evolution beat the prior HP by &ge;10). Editing a band changes both the ask and the guarantee &ndash; edit the band
+    in <code>STAGES</code>, not the prose. <span class="knob">STAGES.hp / .dmg</span></div>
+
+  <h3>A2. Create <span class="tag">newPokemon</span></h3>
+  <p>Called by <code>POST /api/pokemon</code>. Always stage 1, never a variant. The only runtime piece is the kid's raw prompt.</p>
+<pre><code>A kid wants a new Pokemon: "<span class="ins">&lt;kid's prompt&gt;</span>".
+Invent stage 1 of it. Reply with JSON: <span class="ins">&lt;stageShape(1, null)&gt;</span></code></pre>
+
+  <h3>A3. Evolve <span class="tag">evolvedStage</span></h3>
+  <p>Called by <code>POST /api/pokemon/:id/evolve</code>. Richest text prompt, most variants. Bracketed pieces are conditional.</p>
+<pre><code>This Pokemon: <span class="ins">&lt;JSON of prev stage: name, category, types, hp, description, backstory&gt;</span>
+Invent its next evolution stage: bigger, more powerful, clearly the same species, sillier if possible.
+<span class="cond">[The kid wants the evolution to be: &lt;guidance&gt;.]        &lt;- only if the kid typed guidance</span>
+<span class="cond">[This is a rare &lt;VARIANT&gt; mega-style evolution -         &lt;- only on a rolled special (stage 3)</span>
+<span class="cond"> dramatically more powerful and epic.</span>
+<span class="cond"> Have this picture include an appropriate scenic background.]</span>
+HP and move damage must be higher than before (hp was <span class="ins">&lt;prevHp&gt;</span>).
+Write a NEW backstory that clearly continues the previous stage's.
+Reply with JSON: <span class="ins">&lt;stageShape(stageNo, variant)&gt;</span></code></pre>
+  <ul>
+    <li><strong>Previous-stage context</strong> &ndash; always injected as JSON, so the model stays on-species.</li>
+    <li><strong>Guidance</strong> &ndash; optional text the kid typed before EVOLVE. Absent &rarr; the line is dropped.</li>
+    <li><strong>Variant</strong> &ndash; <code>rollSpecial(3)</code> result. Absent &rarr; the whole variant block is
+      dropped and <code>stageShape</code> uses the normal band.</li>
+    <li><strong><code>prevHp</code></strong> &ndash; forces the "higher than before" instruction to be concrete.</li>
+  </ul>
+  <div class="note">The variant <em>word</em> in the text prompt is the object key (<code>VMAX</code> / <code>EX</code> /
+    <code>Mega</code>), which is why the text prompt reads "rare Mega mega-style evolution" for Mega. If that phrasing
+    bugs you, that's the seam.</div>
+
+  <h3>A4. Trainer profile <span class="tag">trainerBackstory</span></h3>
+  <p>Called on trainer create and on first profile view (backfill). A trainer dossier, not a creature.</p>
+<pre><code>A Pokemon trainer named "<span class="ins">&lt;name&gt;</span>", described as: "<span class="ins">&lt;description or 'a mysterious trainer'&gt;</span>".
+Invent their profile. Their finishing move MUST be picked from this list of devastating canon moves
+(name, type, power): <span class="ins">&lt;FINISHER_MOVES joined with '; '&gt;</span>.
+Their favorite Pokemon MUST be a Pokemon that canonically uses that move (signature Z-moves belong to
+their signature Pokemon). Pick a pairing that fits this trainer's personality.
+Reply with JSON:
+{"region": "...", "homeGym": "town + gym type", "backstory": "3-5 sentences mentioning region and gym",
+ "favoritePokemon": "...", "finishingMove": "the move exactly as listed"}</code></pre>
+  <p><span class="knob">FINISHER_MOVES</span> is a hard-coded list of every canon move with power &gt; 150 (NotebookLM
+    "Pokemon moves" source, cached 2026-07-13). Edit the list to change the pool of finishers.</p>
+
+  <!-- ================= IMAGE ================= -->
+  <h2 id="image">Part B &ndash; Image prompts <span class="tag">server.js</span></h2>
+  <p>Assembled in <code>server.js</code> (one per flow), pulling shared art fragments from <code>lib/text.js</code> and
+    the continuity helper from <code>lib/providers.js</code>. Three fixed fragments recur.</p>
+
+  <h3>B0. The shared art fragments</h3>
+  <p><strong><code>ART_STYLE</code></strong> (<code>lib/text.js</code>) &ndash; the house look, appended to <em>every</em> <code>artPrompt</code> by the text model:</p>
+<pre><code>Cel-shaded official Pokemon-style game art in the Ken Sugimori watercolor style: simple readable
+silhouette, bold slightly-varied outlines, 1-2 midtone main colors plus one accent, soft purple-tinted
+shadows, basic highlights, full body, single creature, plain white background. Do not write the creature's
+name or any text, letters, numbers, logos, or watermarks anywhere in the image. Do your best to honor
+specifics and intent of the kid's prompt.</code></pre>
+
+  <p><strong><code>NO_TEXT</code></strong> (<code>server.js</code>) &ndash; a shorter no-text reminder re-appended on Evolve and Alter:</p>
+<pre><code>Do not write the creature's name or any text, letters, numbers, logos, or watermarks anywhere in the image.</code></pre>
+
+  <p><strong>Variant art phrases</strong> (<code>STAGES.special.variants[tier].art</code>) &ndash; appended when a stage is/was a special:</p>
+  <table>
+    <tr><th>Tier</th><th>Art phrase</th></tr>
+    <tr><td><span class="v vmax">VMAX</span></td><td>crackling electric-blue energy, radiant silver aura, sparks flying, dynamic stadium background with storm-lit clouds and lightning</td></tr>
+    <tr><td><span class="v ex">EX</span></td><td>wreathed in golden fire, glowing prismatic divine radiance, radiant sunburst temple background</td></tr>
+    <tr><td><span class="v mega">MEGA</span></td><td>colossal mega-evolved form, swirling cosmic nebula background that emphasizes the huge scale of it, rainbow prismatic aura, glowing mega stone on its brow</td></tr>
+  </table>
+  <div class="note">VMAX and EX gained their scenic backgrounds in the 2026-08-30 commit "add background art to VMAX and
+    EX variant image prompts"; before that they only described an aura and rendered on plain white. Mega already carried
+    its cosmic-nebula background. <span class="knob">STAGES.special.variants[tier].art</span></div>
+
+  <p><strong><code>withContinuity(provider, prompt, description)</code></strong> (<code>lib/providers.js</code>) &ndash;
+    if the provider has no reference-image support and a description exists, appends
+    <code>\nThe creature looks like this: &lt;description&gt;</code>. Otherwise returns the prompt unchanged
+    (reference-capable providers get the actual prior image instead).</p>
+  <p><strong>Bridge-only suffix</strong> &ndash; the <code>bridge</code> provider appends
+    <code>\nSquare image, 1:1 aspect ratio.</code> when it writes the job (<code>writeBridgeJob</code>). Gemini/z.ai set
+    1:1 via the API config instead.</p>
+
+  <h3>B1. Create image prompt <span class="tag">POST /api/pokemon</span></h3>
+<pre><code><span class="ins">&lt;withContinuity(provider, artPrompt, '')&gt;</span>
+The kid asked for: <span class="ins">&lt;kid's prompt&gt;</span>.</code></pre>
+  <ul>
+    <li><code>artPrompt</code> is what the text model just produced (already ends with <code>ART_STYLE</code>).</li>
+    <li>The description arg is empty, so <code>withContinuity</code> is a no-op on create.</li>
+    <li>The kid's original words are re-stated to the artist as a final intent nudge.</li>
+  </ul>
+
+  <h3>B2. Evolve image prompt <span class="tag">POST /api/pokemon/:id/evolve</span></h3>
+<pre><code><span class="ins">&lt;withContinuity(provider,</span>
+  "Evolve this creature. Its evolved form: <span class="ins">&lt;artPrompt&gt;</span>
+   Same species, same color palette, same art style, clearly a bigger more powerful evolution.
+   The evolved form should look sturdier or sharper than before, same palette, keep one signature feature."<span class="ins">,</span>
+  <span class="ins">&lt;prev stage description&gt;)</span>
+<span class="cond">[The kid asked for: &lt;guidance&gt;.]        &lt;- only if guidance was typed</span>
+<span class="cond">[&lt;variant art phrase&gt;.]                  &lt;- only on a rolled special</span>
+<span class="ins">&lt;NO_TEXT&gt;</span></code></pre>
+  <p>Separately from the prompt text: if the provider <code>supportsReference</code>, the <strong>previous stage's image
+    file</strong> is attached as a reference. That is the strongest continuity lever &ndash; only Gemini/mock use it;
+    <code>zai</code> and <code>bridge</code> fall back to the description injected by <code>withContinuity</code>. All
+    three variants (guidance, variant art phrase, reference-vs-description) can stack at once on a Gemini stage-3 special
+    evolution with kid guidance.</p>
+
+  <h3>B3. Alter / Redraw image prompt <span class="tag">POST /api/pokemon/:id/alter</span></h3>
+  <p>The most conditional prompt. The base clause depends on whether the kid typed anything.</p>
+  <p><strong>With instruction:</strong></p>
+<pre><code><span class="ins">&lt;instruction&gt;</span>. Keep it the same creature, same cel-shaded Pokemon-style game art, full body, plain white background.</code></pre>
+  <p><strong>Blank (redraw my original):</strong></p>
+<pre><code>Draw this creature fresh: <span class="ins">&lt;stage 0 uses the kid's original words; later stages use the stage description&gt;</span></code></pre>
+  <p>Then, conditionally:</p>
+  <ul>
+    <li>If there's no reference image <strong>and</strong> a description exists <strong>and</strong> it isn't already in the base clause, append <code>\nThe creature looks like this: &lt;description&gt;</code>.</li>
+    <li>If the stage is/was a special, append <code>\n&lt;variant art phrase&gt;.</code> (a redraw keeps its foil look).</li>
+    <li>Always append <code>\n&lt;NO_TEXT&gt;</code>.</li>
+  </ul>
+  <p>Reference image: used when the provider supports it <strong>and</strong> the current art isn't the mock
+    placeholder (a &lt;500-byte file is treated as "no real art to draw from").</p>
+  <div class="note"><strong>Side effect:</strong> an instructed alter appends <code>Recently altered: &lt;instruction&gt;.</code>
+    to the stage <code>description</code>, so subsequent no-reference prompts inherit the change. (Marked
+    <code>ponytail:</code> in code as a naive continuity note &ndash; a vision re-caption would be the upgrade if drift
+    ever matters.)</div>
+
+  <h3>B4. Trainer avatar prompt <span class="tag">POST /api/trainers</span></h3>
+  <p>Fixed, no variants beyond the kid's description:</p>
+<pre><code>Pokemon trainer portrait: <span class="ins">&lt;description&gt;</span>. Friendly bust portrait, cel-shaded Ken Sugimori watercolor style,
+plain white background. Do not write any text, letters, numbers, logos, or watermarks in the image.</code></pre>
+
+  <!-- ================= QUICK REF ================= -->
+  <h2 id="quick">Part C &ndash; Quick reference</h2>
+  <table>
+    <tr><th>I want to change&hellip;</th><th>Edit this</th></tr>
+    <tr><td>Overall tone / age / humor of all text</td><td><code>SYSTEM</code> in <code>lib/text.js</code></td></tr>
+    <tr><td>House lore in every generation</td><td>Set <code>CANON_FILE</code> env (contents appended to system)</td></tr>
+    <tr><td>The house art style</td><td><code>ART_STYLE</code> in <code>lib/text.js</code></td></tr>
+    <tr><td>HP / damage numbers per stage</td><td><code>STAGES.hp</code> / <code>STAGES.dmg</code> (+ <code>clampStage</code>)</td></tr>
+    <tr><td>Special-variant rarity</td><td><code>STAGES.special.odds</code> (see odds note)</td></tr>
+    <tr><td>A special variant's stats or foil art</td><td><code>STAGES.special.variants[tier]</code></td></tr>
+    <tr><td>Add a new lane (GX, Gigantamax)</td><td><code>odds</code> + <code>variants</code> in <code>lib/text.js</code>; <code>VARIANT_LABELS</code> + a <code>.variant-&lt;tier&gt;</code> block in <code>public/card-format.js</code> / <code>style.css</code></td></tr>
+    <tr><td>What the evolve prompt tells the artist</td><td>The template string in <code>evolvedStage</code> / evolve route in server</td></tr>
+    <tr><td>The finishing-move pool for trainers</td><td><code>FINISHER_MOVES</code> in <code>lib/text.js</code></td></tr>
+    <tr><td>The no-text / watermark rule</td><td><code>ART_STYLE</code> (create) and <code>NO_TEXT</code> (evolve/alter)</td></tr>
+    <tr><td>Whether continuity uses image vs description</td><td>Provider's <code>supportsReference</code> flag in <code>lib/providers.js</code></td></tr>
+  </table>
+  <div class="note"><strong>Odds note:</strong> <code>STAGES.special.odds</code> currently sums to <strong>0.35</strong>
+    (VMAX 0.15 + EX 0.12 + Mega 0.08), so ~35% of final evolutions become special. Decide the real target rarity before
+    adding lanes, since every new lane you add here changes the total. Specials only roll when evolving
+    <strong>into stage 3</strong>.</div>
+
+  <!-- ================= RECIPES ================= -->
+  <h2 id="recipes">If you'd like to&hellip;</h2>
+  <p class="lead">Task-first recipes. Each names the one edit that does it and the file it lives in.</p>
+
+  <div class="recipes">
+
+    <div class="recipe">
+      <h4>If you'd like the creatures <em>goofier or grosser</em></h4>
+      <p class="edit">Loosen the humor line in <code>SYSTEM</code> ("silly and gross-out humor is great") and drop "add a degree of cinematic realism".</p>
+      <span class="where">lib/text.js &middot; SYSTEM</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like the art <em>more epic / more realistic</em></h4>
+      <p class="edit">Edit <code>ART_STYLE</code> &ndash; it's appended to every artPrompt, so one change moves the whole house look. Keep the "no text/watermark" clause.</p>
+      <span class="where">lib/text.js &middot; ART_STYLE</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like specials to be <em>rarer</em> (back to ~5%)</h4>
+      <p class="edit">Lower <code>STAGES.special.odds</code>. They're absolute and currently sum to 0.35; make them sum to ~0.05 (e.g. VMAX .02, EX .02, Mega .01).</p>
+      <span class="where">lib/text.js &middot; STAGES.special.odds</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like <em>stronger (or weaker) starters</em></h4>
+      <p class="edit">Move the Stage 1 band. <code>STAGES.hp[1]</code> / <code>STAGES.dmg[1]</code> set both the ask and the <code>clampStage</code> guarantee.</p>
+      <span class="where">lib/text.js &middot; STAGES.hp / .dmg</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like a <em>new lane</em> (GX, Gigantamax, Shiny)</h4>
+      <p class="edit">Add a key to <code>odds</code> and a matching entry in <code>variants</code> (stats + <code>art</code> phrase), then add <code>VARIANT_LABELS</code> + a <code>.dv-&lt;tier&gt;</code> / <code>.variant-&lt;tier&gt;</code> style block. Re-check the odds total.</p>
+      <span class="where">lib/text.js + public/card-format.js + style.css</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like specials to <em>stop adding scenic backgrounds</em></h4>
+      <p class="edit">Trim the background clause out of each <code>variants[tier].art</code> string (the part after the aura), and remove "include an appropriate scenic background" from <code>evolvedStage</code>.</p>
+      <span class="where">lib/text.js &middot; variants[tier].art + evolvedStage</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like a <em>different pool of trainer finishers</em></h4>
+      <p class="edit">Edit <code>FINISHER_MOVES</code>. Keep the "Name (Type, Power)" shape &ndash; the prompt tells the model the favorite Pokemon must canonically use the chosen move.</p>
+      <span class="where">lib/text.js &middot; FINISHER_MOVES</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like <em>tighter visual continuity</em> across evolutions</h4>
+      <p class="edit">Use a reference-capable provider (gemini/mock): its previous-stage image is attached directly. Description-only providers (zai/bridge) rely on the text <code>description</code> field, so make that field richer.</p>
+      <span class="where">lib/providers.js &middot; supportsReference</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like to <em>change the universe lore</em></h4>
+      <p class="edit">Don't inline it &ndash; edit the <code>CANON_FILE</code> (<code>docs/reference/canon-pack.md</code>). It's injected into the system prompt on every text call. Re-distill it from sources with <code>scripts/refresh-notebook-cache.py</code>.</p>
+      <span class="where">.env CANON_FILE + docs/reference/canon-pack.md</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like to <em>reword what "evolve" means</em> to the artist</h4>
+      <p class="edit">Edit the "Evolve this creature&hellip; keep one signature feature" template in the evolve route. That's the text handed to the image model, distinct from the text-stage evolve prompt.</p>
+      <span class="where">server.js &middot; evolve route</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like the model to <em>stop drawing text on cards</em></h4>
+      <p class="edit">The no-text rule lives in two places: <code>ART_STYLE</code> (create) and <code>NO_TEXT</code> (evolve/alter). Strengthen both, or add it to the trainer-avatar prompt in <code>server.js</code>.</p>
+      <span class="where">lib/text.js ART_STYLE + server.js NO_TEXT</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like <em>square art without the bridge suffix</em></h4>
+      <p class="edit">Gemini/z.ai already set 1:1 via API config. The <code>bridge</code> provider appends "Square image, 1:1 aspect ratio." in <code>writeBridgeJob</code> &ndash; change it there if the driver handles aspect differently.</p>
+      <span class="where">lib/providers.js &middot; writeBridgeJob</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like evolutions to <em>allow a 4th stage</em></h4>
+      <p class="edit">The 3-stage cap is enforced in the evolve route (<code>stages.length &gt;= 3</code>), and <code>rollSpecial</code> only fires into stage 3. Both would need to move together.</p>
+      <span class="where">server.js evolve route + lib/text.js rollSpecial</span>
+    </div>
+
+    <div class="recipe">
+      <h4>If you'd like <em>editable stats after generation</em> to widen</h4>
+      <p class="edit">The PATCH route whitelists <code>name, hp, flavor, moves, category</code> (plus per-stage backstory). Add a field to that list to make it editable from the card.</p>
+      <span class="where">server.js &middot; PATCH /api/pokemon/:id</span>
+    </div>
+
+  </div>
+
+  <footer>
+    Pokemine Prompt Manual &middot; generated from source on 2026-08-30 &middot; keep in sync with
+    <code>lib/text.js</code>, <code>server.js</code>, <code>lib/providers.js</code>.
+  </footer>
+
+</div>
+</body>
+</html>

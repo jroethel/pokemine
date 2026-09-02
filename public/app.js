@@ -31,6 +31,43 @@ function hideLoading() {
   clearInterval(msgTimer);
 }
 
+// Live event console (issue #19): a toggleable window fed by GET /api/console (SSE), decoupled
+// from any one generation - open it once and it keeps tailing every create/evolve that happens,
+// same feed a terminal tailer (scripts/console-tail.js) reads. State persists across reloads.
+const CONSOLE_ROW_CAP = 300; // trim old rows so a long dev session doesn't grow the DOM forever
+let consoleSource = null;
+function consoleRow(kind, text) {
+  const log = $('#console-log');
+  const row = document.createElement('div');
+  row.className = `console-row console-${kind}`;
+  row.textContent = text;
+  log.appendChild(row);
+  while (log.children.length > CONSOLE_ROW_CAP) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+function openConsole() {
+  $('#console-panel').classList.remove('hidden');
+  $('#console-toggle').classList.add('on');
+  localStorage.consoleOpen = '1';
+  if (consoleSource) return;
+  consoleSource = new EventSource('/api/console');
+  consoleSource.addEventListener('log', e => {
+    const d = JSON.parse(e.data);
+    consoleRow(d.kind, d.text);
+  });
+}
+function closeConsole() {
+  $('#console-panel').classList.add('hidden');
+  $('#console-toggle').classList.remove('on');
+  localStorage.removeItem('consoleOpen');
+  if (consoleSource) { consoleSource.close(); consoleSource = null; }
+}
+function initConsole() {
+  $('#console-toggle').onclick = () => ($('#console-panel').classList.contains('hidden') ? openConsole() : closeConsole());
+  $('#console-close').onclick = closeConsole;
+  if (localStorage.consoleOpen) openConsole();
+}
+
 // retry (optional): a function that re-runs the failed action reusing the same prompt,
 // surfaced as a "Try Again" button so a kid needn't retype anything after a hiccup.
 let retryFn = null;
@@ -611,4 +648,5 @@ if (errorRetry) errorRetry.onclick = () => {
   if (fn) fn();
 };
 
+initConsole();
 route(); // route() fetches config before rendering

@@ -5,7 +5,11 @@
     "node": ">=20.6"
   },
   "scripts": {
-    "start": "node --env-file=.env server.js",
+    "start": "nohup node --env-file=.env server.js > /tmp/pokemine-server.log 2>&1 & echo 'Pokemine started in background. Logs: /tmp/pokemine-server.log  |  Stop: npm stop'",
+    "start:fg": "node --env-file=.env server.js",
+    "stop": "pkill -f '[n]ode --env-file=.env server.js' || true",
+    "restart": "npm stop; sleep 1; npm start",
+    "console": "node --env-file=.env scripts/console-tail.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

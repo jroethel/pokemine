@@ -7,6 +7,7 @@ const text = require('./lib/text');
 const { listTextProviders } = require('./lib/text-providers');
 const { getProvider, withContinuity, listProviders, extFor, bridgeJobsDir, PIXEL } = require('./lib/providers');
 const { autocrop } = require('./lib/autocrop');
+const eventlog = require('./lib/eventlog');
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || './data';
@@ -195,6 +196,23 @@ const PHASES = {
   image: { name: 'image', msg: 'Drawing your Pokemon...' },
 };
 
+// Live event console (issue #19): broadcast globally (lib/eventlog), not tied to any one
+// request - a browser tab or a terminal tailer can watch generation happen from outside
+// the request that triggered it. kind drives the row color: prompt/model/handoff/rarity/image.
+const trim = (s, n = 140) => (s.length > n ? `${s.slice(0, n)}…` : s);
+const LOG = (kind, text) => eventlog.emit(kind, text);
+
+// GET /api/console: SSE tail of the live event log. Replays recent history on connect,
+// then streams new events as they happen. No 'done' - the client (or curl) keeps this open.
+app.get('/api/console', (req, res) => {
+  res.set('Content-Type', 'text/event-stream');
+  res.set('Cache-Control', 'no-cache');
+  res.set('Connection', 'keep-alive');
+  for (const entry of eventlog.history()) SSE(res, 'log', entry);
+  const unsubscribe = eventlog.subscribe(entry => SSE(res, 'log', entry));
+  req.on('close', unsubscribe);
+});
+
 function logGeneration({ id = '-', provider, t0, textMs, imageMs, outcome }) {
   const line = `${new Date().toISOString()} id=${id} provider=${provider} textMs=${textMs ?? '-'} imageMs=${imageMs ?? '-'} totalMs=${Date.now() - t0} outcome=${outcome}\n`;
   fs.appendFileSync(path.resolve(DATA_DIR, 'generation.log'), line);
@@ -223,9 +241,12 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   let stage, textMs;
   try {
     SSE(res, 'phase', PHASES.text);
+    LOG('model', `Text model: ${textProvider || process.env.TEXT_PROVIDER || 'gemini'}`);
+    LOG('prompt', `Kid's idea: "${trim(prompt.trim())}"`);
     const tText = Date.now();
     stage = await text.newPokemon(prompt.trim(), { textProvider });
     textMs = Date.now() - tText;
+    LOG('handoff', `${stage.name} concept ready (${stage.types.join('/')}, ${stage.hp} HP) → sending to the artist`);
   } catch (e) {
     SSE(res, 'error', { message: e.message });
     logGeneration({ provider, t0, textMs, outcome: 'error' });
@@ -238,17 +259,22 @@ app.post('/api/pokemon', wrap(async (req, res) => {
   const tImg = Date.now();
   try {
     SSE(res, 'phase', PHASES.image);
-    art = await autocrop(await getProvider(provider).generate({
-      prompt: `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`,
-    }));
+    LOG('model', `Image model: ${provider}`);
+    const imgPrompt = `${withContinuity(provider, artPrompt, '')}\nThe kid asked for: ${prompt.trim()}.`;
+    LOG('prompt', `Art prompt: ${trim(imgPrompt)}`);
+    LOG('image', 'Drawing...');
+    art = await autocrop(await getProvider(provider).generate({ prompt: imgPrompt }));
     logCost(provider);
+    LOG('image', 'Art ready');
   } catch (e) {
     art = { data: PIXEL, mime: 'image/png' }; // placeholder; Redraw retries the picture
     outcome = 'art-failed'; warning = 'art-failed';
+    LOG('image', 'Art generation failed - using a placeholder (Redraw to retry)');
   }
   imageMs = Date.now() - tImg;
   if (aborted) { logGeneration({ provider, t0, textMs, imageMs, outcome: 'aborted' }); return res.end(); }
 
+  LOG('handoff', 'Saving card...');
   const record = store.create({
     ...(trainer ? { createdBy: trainer } : {}),
     stages: [{ ...stageData, prompt: prompt.trim(), art: null }],
@@ -283,22 +309,30 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
     const guidance = (instruction || '').trim();
     const stageNo = record.stages.length + 1;
     const variant = text.rollSpecial(stageNo); // 30% jackpot, only rolling into stage 3
+    LOG('rarity', variant ? `✨ Rolled a rare ${variant} evolution!` : 'No special variant this roll');
     // Steering applies at both levels: the text model shapes the evolution concept
     // (name, category, stats) and the image prompt shapes the art.
     SSE(res, 'phase', PHASES.text);
+    LOG('model', `Text model: ${process.env.TEXT_PROVIDER || 'gemini'}`);
+    if (guidance) LOG('prompt', `Kid's guidance: "${trim(guidance)}"`);
     const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant);
+    LOG('handoff', `${stageData.name} concept ready (${stageData.hp} HP) → sending to the artist`);
     const p = getProvider(provider);
     SSE(res, 'phase', PHASES.image);
+    LOG('model', `Image model: ${provider}`);
     const prompt = `${withContinuity(provider,
       `Evolve this creature. Its evolved form: ${artPrompt}
 Same species, same color palette, same art style, clearly a bigger more powerful evolution.
 The evolved form should look sturdier or sharper than before, same palette, keep one signature feature.`,
       prev.description)}${guidance ? `\nThe kid asked for: ${guidance}.` : ''}${variant ? `\n${text.STAGES.special.variants[variant].art}.` : ''}\n${NO_TEXT}`;
+    LOG('prompt', `Art prompt: ${trim(prompt)}`);
     const reference = p.supportsReference
       ? { data: store.readArt(record.id, prev.art), mime: mimeFor(prev.art) }
       : undefined;
+    LOG('image', 'Drawing...');
     const art = await autocrop(await p.generate({ prompt, reference }));
     logCost(provider);
+    LOG('image', 'Art ready');
     // Re-read after the multi-second image await: a concurrent evolve/alter may
     // have saved a new stage while we awaited. Mutating the pre-await copy would
     // silently discard their write. The re-read, re-check, push and save below run

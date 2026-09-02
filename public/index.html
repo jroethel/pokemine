@@ -19,6 +19,7 @@
     <a href="https://www.pokemon.com/us/pokedex" target="_blank" rel="noopener">Official Pokedex ↗</a>
   </div>
   <span id="cost" class="cost"></span>
+  <button id="console-toggle" class="console-toggle no-print" title="Live event console">🖥</button>
 </nav>
 
 <main id="view"></main>
@@ -26,6 +27,11 @@
 <div id="loading" class="hidden">
   <div class="pokeball"></div>
   <p id="loading-msg"></p>
+</div>
+
+<div id="console-panel" class="console-panel hidden no-print">
+  <div class="console-head">Live console <button id="console-close" class="link-btn">✕</button></div>
+  <div id="console-log" class="console-log"></div>
 </div>
 
 <div id="error-box" class="error-box hidden">

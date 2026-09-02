@@ -497,6 +497,8 @@ test('api: evolve streams text then image phases (two ball swaps)', async () => 
     const phases = raw.filter(e => e.event === 'phase').map(e => e.data.name);
     assert.deepEqual(phases, ['text', 'image']); // two swaps, in order - one per ball
     assert.ok(raw.some(e => e.event === 'done'));
+    // issue #19 live console events broadcast globally via /api/console, not on this stream
+    assert.ok(!raw.some(e => e.event === 'log'));
   } finally {
     srv.close();
     global.fetch = realFetch;

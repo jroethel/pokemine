@@ -41,11 +41,14 @@ function parseEvents(text) {
 test('create streams text -> image -> done and logs ok', async () => {
   const { text } = await createBody({ prompt: 'a blob', provider: 'mock' });
   const events = parseEvents(text);
-  assert.equal(events[0].event, 'phase'); assert.equal(events[0].data.name, 'text');
-  assert.equal(events[1].event, 'phase'); assert.equal(events[1].data.name, 'image');
-  assert.equal(events[2].event, 'done');
-  assert.ok(events[2].data.record.id);
-  assert.ok(events[2].data.seconds >= 0);
+  const phases = events.filter(e => e.event === 'phase');
+  assert.equal(phases[0].data.name, 'text');
+  assert.equal(phases[1].data.name, 'image');
+  const done = events.find(e => e.event === 'done');
+  assert.ok(done.data.record.id);
+  assert.ok(done.data.seconds >= 0);
+  // issue #19 live console events broadcast globally via /api/console, not on this stream
+  assert.ok(!events.some(e => e.event === 'log'));
   assert.match(fs.readFileSync(path.join(process.env.DATA_DIR, 'generation.log'), 'utf8'), /outcome=ok/);
 });
 

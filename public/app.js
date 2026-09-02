@@ -303,6 +303,7 @@ async function viewCard(id, stageIdx) {
           <div class="actions idea-box">
             <label class="idea-label" for="alter-text">Type an idea, then pick a button (or leave it blank):</label>
             <textarea id="alter-text" rows="2" placeholder="give it a hat... make it angry... turn it into a dragon..."></textarea>
+            <label class="fresh-check"><input type="checkbox" id="alter-fresh"> Start over (ignore the current art)</label>
             <div class="idea-buttons">
               <button id="alter">Redraw</button>
               ${rec.stages.length >= 3
@@ -374,9 +375,10 @@ async function viewCard(id, stageIdx) {
 
   $('#alter').onclick = async () => {
     const instruction = $('#alter-text').value;
+    const startFresh = $('#alter-fresh').checked;
     const r = await generating(() =>
       api(`/pokemon/${rec.id}/alter`, {
-        method: 'POST', body: { instruction, stage: idx, provider: currentProvider() },
+        method: 'POST', body: { instruction, stage: idx, provider: currentProvider(), startFresh },
       }), () => $('#alter').click()); // alter-text keeps its value on failure; retry reuses it
     if (r) viewCard(rec.id, idx);
   };

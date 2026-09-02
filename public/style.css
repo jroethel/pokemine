@@ -778,6 +778,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--brand-blue); out
 /* auto-grows via JS (one blank line kept free); scrolls past ~8 lines */
 .idea-box textarea { resize: none; overflow-y: auto; line-height: 1.35; }
 .idea-label { font-size: 0.85rem; font-weight: 700; color: #3c5aa6; }
+.fresh-check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; margin: 0.4rem 0; }
+.fresh-check input { border-style: solid; }
 .idea-buttons { display: flex; gap: 0.6rem; }
 .idea-buttons #alter { flex: 1; }
 .idea-buttons #evolve { flex: 2; }

@@ -382,11 +382,12 @@ test('api: create, evolve, alter, patch lifecycle', async () => {
     body: body ? JSON.stringify(body) : undefined,
   }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
 
-  // spy on the prompt the mock artist receives so we can assert the no-text rule is present
+  // spy on the prompt/reference the mock artist receives so we can assert the no-text rule
+  // is present and whether a reference image was attached
   const mock = getProvider('mock');
   const realGen = mock.generate;
-  let lastPrompt = '';
-  mock.generate = async a => { lastPrompt = a.prompt; return realGen(a); };
+  let lastPrompt = '', lastReference;
+  mock.generate = async a => { lastPrompt = a.prompt; lastReference = a.reference; return realGen(a); };
 
   try {
     let r = await call('/api/pokemon', 'POST', { prompt: '', provider: 'mock' });
@@ -533,6 +534,49 @@ test('api: alter redraw of an evolved stage does not duplicate the description',
     await parseResponseBody(await post(`/api/pokemon/${created.id}/alter`, { stage: 1, provider: 'mock' }));
     const count = lastPrompt.split(desc).length - 1;
     assert.equal(count, 1, `description should appear once, appeared ${count}`);
+  } finally {
+    srv.close();
+    global.fetch = realFetch;
+    mock.generate = realGen;
+  }
+});
+
+test('api: alter Start Fresh drops the reference image (issue #17)', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    if (String(url).includes('generativelanguage')) {
+      const stage = { name: 'Zorg', category: 'c', types: ['Normal'], hp: 50,
+        flavor: 'f', moves: [{ name: 'Tag', damage: 20, text: 't' }], artPrompt: 'a', description: 'd', backstory: 'b' };
+      return { json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(stage) }] } }] }) };
+    }
+    return realFetch(url, opts);
+  };
+
+  const app = require('../server');
+  const srv = app.listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const post = (p, b) => fetch(`${base}${p}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b),
+  }).then(async r => ({ status: r.status, body: await parseResponseBody(r) }));
+
+  const mock = getProvider('mock');
+  const realGen = mock.generate;
+  let lastReference;
+  mock.generate = async a => { lastReference = a.reference; return realGen(a); };
+
+  try {
+    const created = (await post('/api/pokemon', { prompt: 'a pokemon', provider: 'mock' })).body;
+    const artFile = path.join(process.env.DATA_DIR, 'pokemon', created.id, 'stage-1.png');
+    fs.writeFileSync(artFile, Buffer.alloc(600)); // real-sized art, not mock's <500-byte placeholder
+
+    await post(`/api/pokemon/${created.id}/alter`, { instruction: 'plain white background', stage: 0, provider: 'mock' });
+    assert.ok(lastReference, 'reference should be attached by default when real art exists');
+
+    fs.writeFileSync(artFile, Buffer.alloc(600)); // mock's own generate re-wrote the placeholder; restore it
+    await post(`/api/pokemon/${created.id}/alter`, {
+      instruction: 'plain white background', stage: 0, provider: 'mock', startFresh: true,
+    });
+    assert.equal(lastReference, undefined, 'Start Fresh should drop the reference');
   } finally {
     srv.close();
     global.fetch = realFetch;

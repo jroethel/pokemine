@@ -237,7 +237,9 @@ Then, conditionally:
 - Always append `\n<NO_TEXT>`.
 
 Reference image: used when the provider supports it **and** the current art isn't the mock placeholder
-(a <500-byte file is treated as "no real art to draw from").
+(a <500-byte file is treated as "no real art to draw from") **and** the kid didn't check "Start over"
+(`startFresh` in the request body). The reference dominates the text instruction, so unchecking it is the
+escape hatch for baked-in art a redraw can't otherwise override (issue #17).
 
 Side effect worth knowing: an instructed alter appends `Recently altered: <instruction>.` to the stage
 `description`, so subsequent no-reference prompts inherit the change. (Marked `ponytail:` in code as a naive

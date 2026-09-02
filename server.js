@@ -325,7 +325,7 @@ The evolved form should look sturdier or sharper than before, same palette, keep
 }));
 
 app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
-  const { instruction, stage: stageIndex, provider = DEFAULT_PROVIDER } = req.body;
+  const { instruction, stage: stageIndex, provider = DEFAULT_PROVIDER, startFresh } = req.body;
   const record = store.get(req.params.id);
   if (!record) return res.status(404).json({ error: 'Not found' });
   const idx = stageIndex === undefined ? record.stages.length - 1 : stageIndex;
@@ -338,7 +338,9 @@ app.post('/api/pokemon/:id/alter', wrap(async (req, res) => {
   const p = getProvider(provider);
   const current = store.readArt(record.id, stage.art);
   const placeholder = current.length < 500; // mock's 1x1 png - no real art to draw from
-  const reference = p.supportsReference && !placeholder
+  // Start Fresh drops the reference image so a redraw can override baked-in art (issue #17)
+  // that the reference would otherwise dominate over the text instruction.
+  const reference = p.supportsReference && !placeholder && !startFresh
     ? { data: current, mime: mimeFor(stage.art) }
     : undefined;
   // Without a reference image, hand the artist the text description instead (as withContinuity does).

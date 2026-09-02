@@ -1,5 +1,5 @@
 <!--
-generated: 2026-08-30T15:02:07Z
+generated: 2026-09-02T05:32:18Z
 source of truth: GitHub issues
 regenerate: scripts/gen-mirrors.sh .
 DO NOT EDIT
@@ -8,6 +8,7 @@ DO NOT EDIT
 
 | # | title | labels | updated |
 |---|---|---|---|
+| 15 | Ask Dad menu option for kid feature requests | idea | 2026-08-30T15:16:11Z |
 | 11 | Local Stable Diffusion provider | idea | 2026-08-08T02:52:33Z |
 | 10 | Bridge reference-image support v2 | idea | 2026-08-08T02:52:32Z |
 | 9 | Pokedex-book view | idea | 2026-08-08T02:52:31Z |

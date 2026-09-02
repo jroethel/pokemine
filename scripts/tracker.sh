@@ -114,6 +114,7 @@ local_create() {              # args: label title body -> prints number
   } > "$file"
   echo "note: ISSUES.md/BACKLOG.md now stale - run scripts/gen-mirrors.sh ." >&2  # reminder only; no auto-regen
   printf '%s\n' "$num"
+  echo 'tracker: docs for this item should gain its token (.I<n> or .B<n>) in their filename' >&2
 }
 local_set_state() {           # args: number newstate ; rewrites state: and updated: only inside the first frontmatter block
   local f tmp now; f="$(find_issue_file "$1")" || fail "no local issue #$1"
@@ -400,9 +401,14 @@ Usage: tracker.sh <command> [args]
   claim <num> <session-id> [--reclaim]  receipt-before-flip claim; prints owner id, exit 4 on race
   done <num> --receipt <text> [--ran <cmd>]  evidence-gated completion: agent:done + close
   next-eligible [<session-id>]    select at most one actionable ticket (stale working, else unblocked todo)
+
+Examples:
+  tracker.sh create --label "" --title "Title" --body "Body"      new issue
+  tracker.sh create --label idea --title "Title" --body "Body"    new idea (Backlog lane)
 EOF
 }
 
+case "${1:-}" in -h|--help) usage 2>&1; exit 0 ;; esac
 [ $# -ge 1 ] || { usage; exit 1; }
 sub="$1"; shift
 case "$sub" in
@@ -441,6 +447,7 @@ case "$sub" in
         [ -n "$label" ] && args+=(--label "$label")
         url="$(gh "${args[@]}")" || fail "gh issue create failed"
         printf '%s\n' "${url##*/}"
+        echo 'tracker: docs for this item should gain its token (.I<n> or .B<n>) in their filename' >&2
         ;;
       gitlab)
         glab_guard
@@ -450,6 +457,7 @@ case "$sub" in
         iid="$(printf '%s' "$out" | grep -oE '/issues/[0-9]+' | tail -1 | sed 's#.*/##')"
         [ -n "$iid" ] || fail "glab issue create returned no parseable issue URL"
         printf '%s\n' "$iid"
+        echo 'tracker: docs for this item should gain its token (.I<n> or .B<n>) in their filename' >&2
         ;;
       local)
         local_create "$label" "$title" "$body"

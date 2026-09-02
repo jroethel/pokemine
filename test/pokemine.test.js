@@ -257,6 +257,35 @@ test('text: callJSON throws when JSON is malformed twice', async () => {
   } finally { global.fetch = realFetch; }
 });
 
+test('text: callJSON falls back to a sibling provider on a transient error (issue #18)', async () => {
+  const realFetch = global.fetch;
+  let n = 0;
+  global.fetch = async url => {
+    n++;
+    if (String(url).includes('generativelanguage')) {
+      const e = new Error('The operation was aborted due to timeout');
+      e.name = 'TimeoutError';
+      throw e;
+    }
+    return { json: async () => ({ content: [{ text: '{"ok":2}' }] }) };
+  };
+  try {
+    const hops = [];
+    const result = await callJSON('p', { textProvider: 'gemini', onFallback: (from, to) => hops.push([from, to]) });
+    assert.deepEqual(result, { ok: 2 });
+    assert.equal(n, 2); // one failed gemini attempt, one successful anthropic fallback
+    assert.deepEqual(hops, [['gemini', 'anthropic']]); // soft note fires exactly once
+  } finally { global.fetch = realFetch; }
+});
+
+test('text: callJSON does not fall back on a non-transient error', async () => {
+  const realFetch = global.fetch;
+  global.fetch = async () => { throw new Error('boom'); };
+  try {
+    await assert.rejects(callJSON('p', { textProvider: 'gemini' }), /boom/);
+  } finally { global.fetch = realFetch; }
+});
+
 test('text: callJSON injects CANON_FILE contents into the system prompt', async () => {
   const realFetch = global.fetch;
   const canon = path.join(process.env.DATA_DIR, 'canon.md');

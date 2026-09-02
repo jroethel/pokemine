@@ -95,30 +95,57 @@ function setPhase() {
   $('#loading .pokeball').className = 'pokeball' + (ball ? ' ' + ball : '');
 }
 
+// Watchdog for a hung/dropped SSE stream (issue #18): if no phase/done/error event
+// arrives within SSE_INACTIVITY_MS, or the whole generation runs past SSE_TOTAL_MS,
+// abort the fetch so the pokeball doesn't spin forever.
+const SSE_INACTIVITY_MS = 45000;
+const SSE_TOTAL_MS = 150000;
+
 // Read an SSE stream: swap balls on phase events, surface errors, return the done payload.
-async function streamSSE(res) {
+// `controller` (optional) is the AbortController that owns the fetch; passing it enables the watchdog.
+async function streamSSE(res, controller) {
   if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'Something went wrong'); }
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let buf = '', result, errMsg;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let idx;
-    while ((idx = buf.indexOf('\n\n')) >= 0) {
-      const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
-      let evt = 'message', data = '';
-      for (const line of block.split('\n')) {
-        if (line.startsWith('event: ')) evt = line.slice(7);
-        else if (line.startsWith('data: ')) data += line.slice(6);
+  let inactivityTimer, totalTimer;
+  const resetInactivity = () => {
+    if (!controller) return;
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => controller.abort(), SSE_INACTIVITY_MS);
+  };
+  if (controller) {
+    resetInactivity();
+    totalTimer = setTimeout(() => controller.abort(), SSE_TOTAL_MS);
+  }
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const block = buf.slice(0, idx); buf = buf.slice(idx + 2);
+        let evt = 'message', data = '';
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event: ')) evt = line.slice(7);
+          else if (line.startsWith('data: ')) data += line.slice(6);
+        }
+        resetInactivity();
+        if (evt === 'phase') setPhase();
+        else if (evt === 'done') result = JSON.parse(data);
+        else if (evt === 'error') errMsg = JSON.parse(data).message;
       }
-      if (evt === 'phase') setPhase();
-      else if (evt === 'done') result = JSON.parse(data);
-      else if (evt === 'error') errMsg = JSON.parse(data).message;
     }
+  } catch (e) {
+    if (controller?.signal.aborted) throw new Error('timed out');
+    throw e;
+  } finally {
+    clearTimeout(inactivityTimer);
+    clearTimeout(totalTimer);
   }
   if (errMsg) throw new Error(errMsg);
+  if (result === undefined) throw new Error('timed out'); // stream ended with no done/error event
   return result;
 }
 
@@ -130,13 +157,19 @@ function holdFinalPhase() {
 }
 
 async function createPokemon(prompt, provider, trainer, textProvider) {
-  const res = await fetch('/api/pokemon', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, provider, trainer, textProvider }),
-  });
-  const data = await streamSSE(res);
-  await holdFinalPhase();
-  return data;
+  const controller = new AbortController();
+  try {
+    const res = await fetch('/api/pokemon', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, provider, trainer, textProvider }),
+      signal: controller.signal,
+    });
+    const data = await streamSSE(res, controller);
+    await holdFinalPhase();
+    return data;
+  } catch (e) {
+    throw controller.signal.aborted ? new Error('timed out') : e;
+  }
 }
 
 // server-tracked cost badge: "<session images> pics ~ $<session cost> | all-time $<total>"
@@ -386,13 +419,19 @@ async function viewCard(id, stageIdx) {
   if (evolveBtn) evolveBtn.onclick = async () => {
     const instruction = $('#alter-text').value; // optional: steer the evolution
     const r = await generating(async () => {
-      const res = await fetch(`/api/pokemon/${rec.id}/evolve`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction, provider: currentProvider() }),
-      });
-      const data = await streamSSE(res);
-      await holdFinalPhase();
-      return data.record;
+      const controller = new AbortController();
+      try {
+        const res = await fetch(`/api/pokemon/${rec.id}/evolve`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instruction, provider: currentProvider() }),
+          signal: controller.signal,
+        });
+        const data = await streamSSE(res, controller);
+        await holdFinalPhase();
+        return data.record;
+      } catch (e) {
+        throw controller.signal.aborted ? new Error('timed out') : e;
+      }
     }, () => evolveBtn.click()); // alter-text keeps its value on failure; retry reuses it
     if (r) { $('#alter-text').value = ''; location.hash = `#card/${rec.id}/${r.stages.length - 1}`; }
   };

@@ -244,7 +244,10 @@ app.post('/api/pokemon', wrap(async (req, res) => {
     LOG('model', `Text model: ${textProvider || process.env.TEXT_PROVIDER || 'gemini'}`);
     LOG('prompt', `Kid's idea: "${trim(prompt.trim())}"`);
     const tText = Date.now();
-    stage = await text.newPokemon(prompt.trim(), { textProvider });
+    stage = await text.newPokemon(prompt.trim(), {
+      textProvider,
+      onFallback: (from, to) => LOG('model', `${from} was slow/busy - falling back to ${to}`),
+    });
     textMs = Date.now() - tText;
     LOG('handoff', `${stage.name} concept ready (${stage.types.join('/')}, ${stage.hp} HP) → sending to the artist`);
   } catch (e) {
@@ -315,7 +318,9 @@ app.post('/api/pokemon/:id/evolve', wrap(async (req, res) => {
     SSE(res, 'phase', PHASES.text);
     LOG('model', `Text model: ${process.env.TEXT_PROVIDER || 'gemini'}`);
     if (guidance) LOG('prompt', `Kid's guidance: "${trim(guidance)}"`);
-    const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant);
+    const { artPrompt, ...stageData } = await text.evolvedStage(record, guidance || undefined, variant, {
+      onFallback: (from, to) => LOG('model', `${from} was slow/busy - falling back to ${to}`),
+    });
     LOG('handoff', `${stageData.name} concept ready (${stageData.hp} HP) → sending to the artist`);
     const p = getProvider(provider);
     SSE(res, 'phase', PHASES.image);
